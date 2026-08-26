@@ -44,7 +44,8 @@ the link's purpose, not the person who actually opens it.
 _Avoid_: Recipient identity, account
 
 **Recipient**:
-A person who possesses a valid share link and can view its paper without signing in.
+A person who possesses a valid share link and can view its project files without
+signing in.
 _Avoid_: Guest, anonymous user
 
 **View**:
@@ -57,5 +58,5 @@ identifier. It is not proof of a person's identity.
 _Avoid_: Unique person, verified viewer
 
 **Critique**:
-Private feedback that a recipient submits to the owner about a shared project.
+Private feedback that a recipient submits to the owner about one project file.
 _Avoid_: Public comment, review

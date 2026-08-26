@@ -48,6 +48,8 @@ deployments fail closed when the auth configuration is missing or invalid;
 
 There is no signup or password-reset flow. Change the owner password in Vercel
 and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser.
+It also invalidates existing share links and makes their stored view and critique
+records unreadable.
 The password remains in server environment configuration; browser sessions
 contain only the owner email in a seven-day encrypted JWE.
 
@@ -59,6 +61,12 @@ upload and rejects duplicate content.
 
 Public-read URLs are unlisted but not access-controlled. Anyone with a PDF URL
 can open or download it; hiding download controls in the web UI is not DRM.
+
+The owner can create labeled secret links from a project page. Recipients open
+those links without signing in, switch between project PDFs, and leave a comment
+on a specific PDF with an optional page number. The app counts total opens and
+estimated unique browsers. It stores share links, views, and critiques as
+encrypted append-only UploadThing records.
 
 ## CLI
 

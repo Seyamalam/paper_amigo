@@ -6,6 +6,20 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ## Unreleased
 
+## 0.2.0 (2026-08-27)
+
+### Features
+
+- Add unauthenticated labeled share links for projects.
+- Add per-PDF recipient comments with optional page numbers and email addresses.
+- Track total share-link views and estimated unique browsers.
+- Add owner dashboards for share links and critiques.
+
+### Security
+
+- Encrypt append-only share, view, and critique records stored in public-read
+  UploadThing storage.
+
 ## 0.1.0 (2026-08-26)
 
 ### Features

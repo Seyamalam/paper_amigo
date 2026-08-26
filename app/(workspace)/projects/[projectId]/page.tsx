@@ -5,8 +5,11 @@ import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { CritiqueList } from "@/components/paper-amigo/critique-list"
+import { ShareLinkPanel } from "@/components/paper-amigo/share-link-panel"
 import { getProject } from "@/lib/project-storage"
 import { formatFileSize } from "@/lib/paper-upload"
+import { getCritiques, getShareLinkSummaries } from "@/lib/sharing-storage"
 
 const projectQuerySchema = z.object({ file: z.string().optional() })
 
@@ -15,7 +18,11 @@ export default async function ProjectPage({
   searchParams,
 }: PageProps<"/projects/[projectId]">) {
   const [{ projectId }, query] = await Promise.all([params, searchParams])
-  const project = await getProject(projectId)
+  const [project, shareLinks, allCritiques] = await Promise.all([
+    getProject(projectId),
+    getShareLinkSummaries(projectId),
+    getCritiques(projectId),
+  ])
 
   if (!project) {
     notFound()
@@ -29,6 +36,10 @@ export default async function ProjectPage({
   if (!selectedFile) {
     notFound()
   }
+
+  const critiques = allCritiques.filter(
+    (critique) => critique.fileKey === selectedFile.key
+  )
 
   return (
     <div className="space-y-5">
@@ -58,9 +69,11 @@ export default async function ProjectPage({
             {project.description}
           </p>
         </div>
-        <Button disabled>
-          <Share2 aria-hidden="true" />
-          Create share link
+        <Button asChild>
+          <a href="#share-links">
+            <Share2 aria-hidden="true" />
+            Share
+          </a>
         </Button>
       </header>
 
@@ -140,6 +153,12 @@ export default async function ProjectPage({
               ))}
             </ul>
           </section>
+
+          <div id="share-links">
+            <ShareLinkPanel projectId={project.id} initialLinks={shareLinks} />
+          </div>
+
+          <CritiqueList critiques={critiques} />
         </aside>
       </div>
     </div>

@@ -24,6 +24,8 @@ profile URL are optional.
   against UploadThing before creating a project.
 - Calculate a SHA-256 hash before upload and reject duplicate PDF content.
 - Roll back uploaded PDFs when project creation is incomplete.
+- Encrypt share-link, view, and critique records before placing them in
+  public-read storage.
 
 ## Owner authentication
 
@@ -67,10 +69,9 @@ than reimplementing storage or authentication.
 - Track total opens and estimated distinct browsers without storing raw IPs.
 - Allow recipients to submit a display name, optional email, critique text, and
   optional page number.
-- Owners can read, filter, mark, delete, and export critiques.
-
-Share-link persistence remains unimplemented until a non-database durable store
-is selected.
+- Owners can read critiques globally and filter them by project file.
+- Tie every critique to one project file.
+- Rate limit critique submissions per browser and reject honeypot submissions.
 
 ## Local quality gate
 
