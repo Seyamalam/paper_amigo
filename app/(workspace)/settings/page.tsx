@@ -11,14 +11,12 @@ type Provider = Readonly<{
 
 const providers: readonly Provider[] = [
   {
-    name: "Better Auth + Google",
-    purpose: "Allowlisted owner sign-in and encrypted stateless sessions",
+    name: "Owner login",
+    purpose: "Single owner credential and encrypted stateless sessions",
     variables: [
       "BETTER_AUTH_SECRET",
-      "BETTER_AUTH_URL",
-      "GOOGLE_CLIENT_ID",
-      "GOOGLE_CLIENT_SECRET",
-      "PAPER_AMIGO_OWNER_EMAILS",
+      "PAPER_AMIGO_OWNER_EMAIL",
+      "PAPER_AMIGO_OWNER_PASSWORD",
     ],
   },
   {

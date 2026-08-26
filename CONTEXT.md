@@ -14,7 +14,8 @@ The owner's complete collection of papers.
 _Avoid_: Repository, archive, folder
 
 **Owner**:
-A Google-authenticated person allowed to manage the library, sharing, and critiques.
+A person authenticated with the configured owner email and password who can manage
+the library, sharing, and critiques.
 _Avoid_: Admin, user
 
 **Ingestion**:

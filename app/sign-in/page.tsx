@@ -5,6 +5,8 @@ import { Suspense } from "react"
 
 import { Brand } from "@/components/paper-amigo/brand"
 import { Button } from "@/components/ui/button"
+import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { getAuthEnvironmentState } from "@/lib/auth-environment"
 import { getOwnerAccess } from "@/lib/owner-access"
 
@@ -19,12 +21,8 @@ function firstValue(value: string | string[] | undefined): string | undefined {
 }
 
 function authErrorMessage(error: string | undefined): string | undefined {
-  if (error === "email_not_allowed") {
-    return "This Google account is not allowed."
-  }
-
-  if (error === "email_not_verified") {
-    return "Google email verification is required."
+  if (error === "invalid_credentials") {
+    return "Invalid email or password."
   }
 
   if (error && error !== "configuration") {
@@ -106,9 +104,33 @@ async function SignInContent({
           </Button>
         </form>
       ) : (
-        <Button asChild className="mt-6 w-full">
-          <Link href="/auth/google">Continue with Google</Link>
-        </Button>
+        <form action="/auth/sign-in" method="post" className="mt-6 space-y-4">
+          <Field>
+            <FieldLabel htmlFor="email">Email</FieldLabel>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="username"
+              required
+              maxLength={254}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              maxLength={256}
+            />
+          </Field>
+          <Button type="submit" className="w-full">
+            Sign in
+          </Button>
+        </form>
       )}
     </SignInShell>
   )

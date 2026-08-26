@@ -1,13 +1,16 @@
 import "server-only"
 
-import { headers } from "next/headers"
+import { cookies } from "next/headers"
 
-import { getAuth } from "@/lib/auth"
 import {
   getAuthEnvironmentState,
   isOwnerEmail,
   type AuthVariableName,
 } from "@/lib/auth-environment"
+import {
+  ownerSessionCookieName,
+  readOwnerSessionEmail,
+} from "@/lib/owner-session"
 
 export type OwnerAccess =
   | Readonly<{ kind: "owner"; email: string }>
@@ -30,14 +33,16 @@ export async function getOwnerAccess(): Promise<OwnerAccess> {
     return { kind: "configuration-error", variables: state.variables }
   }
 
-  const session = await getAuth().api.getSession({ headers: await headers() })
-  if (!session) {
+  const token = (await cookies()).get(ownerSessionCookieName)?.value
+  const email = await readOwnerSessionEmail(token, state.configuration.secret)
+
+  if (!email) {
     return { kind: "signed-out" }
   }
 
-  if (!isOwnerEmail(session.user.email, state.configuration.ownerEmails)) {
+  if (!isOwnerEmail(email, state.configuration.ownerEmail)) {
     return { kind: "not-allowed" }
   }
 
-  return { kind: "owner", email: session.user.email }
+  return { kind: "owner", email }
 }

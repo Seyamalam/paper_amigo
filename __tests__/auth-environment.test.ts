@@ -7,10 +7,8 @@ import {
 
 const configuredEnvironment = {
   betterAuthSecret: "a-secure-secret-that-is-at-least-32-characters",
-  betterAuthUrl: "https://papers.example.com/",
-  googleClientId: "google-client-id",
-  googleClientSecret: "google-client-secret",
-  ownerEmails: " Owner@Example.com,second@example.com,owner@example.com ",
+  ownerEmail: " Owner@Example.com ",
+  ownerPassword: "a-long-owner-password",
 } as const
 
 describe("resolveAuthEnvironment", () => {
@@ -23,10 +21,8 @@ describe("resolveAuthEnvironment", () => {
       kind: "invalid",
       variables: [
         "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET",
-        "PAPER_AMIGO_OWNER_EMAILS",
+        "PAPER_AMIGO_OWNER_EMAIL",
+        "PAPER_AMIGO_OWNER_PASSWORD",
       ],
     })
   })
@@ -36,28 +32,25 @@ describe("resolveAuthEnvironment", () => {
       kind: "configured",
       configuration: {
         secret: configuredEnvironment.betterAuthSecret,
-        baseUrl: "https://papers.example.com",
-        googleClientId: configuredEnvironment.googleClientId,
-        googleClientSecret: configuredEnvironment.googleClientSecret,
-        ownerEmails: ["owner@example.com", "second@example.com"],
+        ownerEmail: "owner@example.com",
+        ownerPassword: configuredEnvironment.ownerPassword,
       },
     })
   })
 
-  it("reports partial or invalid settings", () => {
+  it("reports weak or invalid settings", () => {
     expect(
       resolveAuthEnvironment({
-        ...configuredEnvironment,
         betterAuthSecret: "short",
-        betterAuthUrl: "ftp://papers.example.com",
-        ownerEmails: "",
+        ownerEmail: "not-an-email",
+        ownerPassword: "too-short",
       })
     ).toEqual({
       kind: "invalid",
       variables: [
         "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "PAPER_AMIGO_OWNER_EMAILS",
+        "PAPER_AMIGO_OWNER_EMAIL",
+        "PAPER_AMIGO_OWNER_PASSWORD",
       ],
     })
   })
@@ -70,10 +63,8 @@ describe("resolveAuthEnvironment", () => {
 })
 
 describe("isOwnerEmail", () => {
-  it("matches allowlisted emails without case sensitivity", () => {
-    expect(isOwnerEmail(" OWNER@example.com ", ["owner@example.com"])).toBe(
-      true
-    )
-    expect(isOwnerEmail("other@example.com", ["owner@example.com"])).toBe(false)
+  it("matches the configured email without case sensitivity", () => {
+    expect(isOwnerEmail(" OWNER@example.com ", "owner@example.com")).toBe(true)
+    expect(isOwnerEmail("other@example.com", "owner@example.com")).toBe(false)
   })
 })

@@ -10,13 +10,13 @@ Paper Amigo is a private web library for research-paper PDFs. The owner manages
 the library in a browser. Agents add papers from arbitrary local folders by
 following an agent skill that calls a deterministic CLI.
 
-V1 has one owner library. More than one allowlisted Google account may manage the
-same library, but there are no separate personal libraries or per-owner records.
+V1 has one owner library and one environment-configured owner credential. There
+are no separate personal libraries or per-owner records.
 
 ## Technical constraints
 
 - Use the existing Next.js application.
-- Use Better Auth with Google OAuth in stateless mode.
+- Use Better Auth cryptography for an encrypted stateless owner session.
 - Use UploadThing for private PDF storage.
 - Use a small managed key-value store only for share links, view tracking, and
   critiques.
@@ -28,12 +28,12 @@ The key-value provider remains an implementation decision.
 
 ## Owner authentication
 
-- Only Google OAuth is supported.
-- Owner emails must appear in a server-side allowlist.
-- Better Auth must use signed and encrypted stateless sessions.
+- Only the server-configured owner email and password are supported.
+- There is no registration, password reset, or stored user account.
+- Better Auth cryptography must provide encrypted stateless sessions.
 - Every library, upload, sharing, tracking, and critique-management route requires
   an owner session.
-- The sign-in page must explain when a Google account is not allowed.
+- The sign-in page must show a generic error for invalid credentials.
 - The application must provide sign-out.
 - V1 does not support password login, public registration, roles, organizations,
   or centrally revoking individual browser sessions.
@@ -119,7 +119,7 @@ discovery, hashing, validation, authentication, upload, and retry behavior.
 ## Machine authentication
 
 - CLI requests use a dedicated bearer ingestion credential.
-- The credential is separate from Google OAuth and the UploadThing token.
+- The credential is separate from the owner login and the UploadThing token.
 - It grants ingestion and paper-listing access only.
 - The server reads it from environment configuration.
 - Operators rotate it manually.
@@ -204,12 +204,13 @@ The managed key-value store holds only:
 - Privacy-preserving visitor identifiers used for unique estimates.
 - Critiques and their read state.
 
-PDF bytes remain in UploadThing. Google account and browser-session records remain
-stateless. Secrets must never be stored in plaintext.
+PDF bytes remain in UploadThing. The owner credential remains in server environment
+configuration, and browser sessions remain stateless. Share secrets must never be
+stored in plaintext.
 
 ## Security and privacy
 
-- Keep Google, UploadThing, key-value, and ingestion secrets on the server.
+- Keep owner-auth, UploadThing, key-value, and ingestion secrets on the server.
 - Use secure, HTTP-only, same-site cookies where applicable.
 - Rate limit share-link validation, ingestion, and critique submission.
 - Do not include share secrets in analytics events or application logs.

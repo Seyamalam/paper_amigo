@@ -1,22 +1,22 @@
-import { getAuth } from "@/lib/auth"
-import { getAuthEnvironmentState } from "@/lib/auth-environment"
+import { NextResponse } from "next/server"
 
-export async function POST(request: Request): Promise<Response> {
-  const state = getAuthEnvironmentState()
+import {
+  ownerSessionCookieName,
+  shouldUseSecureCookie,
+} from "@/lib/owner-session"
 
-  if (state.kind !== "configured") {
-    return Response.redirect(new URL("/sign-in", request.url), 303)
-  }
-
-  const result = await getAuth().api.signOut({
-    headers: request.headers,
-    body: { callbackURL: "/sign-in" },
-    returnHeaders: true,
+export function POST(request: Request): Response {
+  const response = NextResponse.redirect(new URL("/sign-in", request.url), 303)
+  response.headers.set("cache-control", "no-store")
+  response.cookies.set({
+    name: ownerSessionCookieName,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: shouldUseSecureCookie(request),
+    path: "/",
+    maxAge: 0,
   })
 
-  const location = new URL(result.response.url ?? "/sign-in", request.url)
-  const responseHeaders = new Headers(result.headers)
-  responseHeaders.set("location", location.toString())
-
-  return new Response(null, { status: 303, headers: responseHeaders })
+  return response
 }

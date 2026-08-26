@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import { getAuth } from "@/lib/auth"
 import { getAuthEnvironmentState, isOwnerEmail } from "@/lib/auth-environment"
+import {
+  ownerSessionCookieName,
+  readOwnerSessionEmail,
+} from "@/lib/owner-session"
 
 function signInRedirect(request: NextRequest, error?: string): NextResponse {
   const url = new URL("/sign-in", request.url)
@@ -24,13 +27,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return signInRedirect(request, "configuration")
   }
 
-  const session = await getAuth().api.getSession({ headers: request.headers })
+  const token = request.cookies.get(ownerSessionCookieName)?.value
+  const email = await readOwnerSessionEmail(token, state.configuration.secret)
 
-  if (!session) {
+  if (!email) {
     return signInRedirect(request)
   }
 
-  if (!isOwnerEmail(session.user.email, state.configuration.ownerEmails)) {
+  if (!isOwnerEmail(email, state.configuration.ownerEmail)) {
     return signInRedirect(request, "email_not_allowed")
   }
 

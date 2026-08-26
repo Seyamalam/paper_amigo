@@ -17,7 +17,7 @@ bun run dev
 
 Open <http://localhost:3000>.
 
-Without auth variables, local development opens in demo mode. To test Google
+Without auth variables, local development opens in demo mode. To test owner
 sign-in locally, copy `.env.example` to `.env`, set the auth variables, and remove
 `PAPER_AMIGO_DEMO_MODE` or set it to `false`.
 
@@ -27,26 +27,26 @@ Set these as encrypted variables for the Production environment:
 
 ```text
 BETTER_AUTH_SECRET
-BETTER_AUTH_URL
-GOOGLE_CLIENT_ID
-GOOGLE_CLIENT_SECRET
-PAPER_AMIGO_OWNER_EMAILS
+PAPER_AMIGO_OWNER_EMAIL
+PAPER_AMIGO_OWNER_PASSWORD
 UPLOADTHING_TOKEN
 PAPER_AMIGO_INGESTION_TOKEN
 ```
 
 - Generate `BETTER_AUTH_SECRET` with `openssl rand -base64 32`.
-- Set `BETTER_AUTH_URL` to the canonical deployment origin, such as
-  `https://papers.example.com`, without a trailing slash.
-- Set `PAPER_AMIGO_OWNER_EMAILS` to a comma-separated list of Google account
-  email addresses. Every listed account manages the same library.
-- Configure this exact Google OAuth redirect URI:
-  `https://papers.example.com/api/auth/callback/google`.
+- Set `PAPER_AMIGO_OWNER_EMAIL` to the only email allowed to sign in.
+- Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password with at least 12
+  characters. A password-manager-generated value is recommended.
 - Keep all of these server-only. Do not add a `NEXT_PUBLIC_` prefix.
 
 The managed KV variables will be added after its provider is selected. Vercel
 deployments fail closed when the auth configuration is missing or invalid;
 `PAPER_AMIGO_DEMO_MODE` only works outside Vercel.
+
+There is no signup or password-reset flow. Change the owner password in Vercel
+and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser.
+The password remains in server environment configuration; browser sessions
+contain only the owner email in a seven-day encrypted JWE.
 
 ## Quality checks
 
