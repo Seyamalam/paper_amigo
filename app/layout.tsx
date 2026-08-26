@@ -1,8 +1,26 @@
+import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
+
+export const metadata: Metadata = {
+  title: {
+    default: "Paper Amigo",
+    template: "%s · Paper Amigo",
+  },
+  description:
+    "A private research-paper library built for focused reading and useful critique.",
+}
+
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+}
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -27,7 +45,7 @@ export default function RootLayout({
         inter.variable
       )}
     >
-      <body>
+      <body className="min-h-svh overflow-x-hidden">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
