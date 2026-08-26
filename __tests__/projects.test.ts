@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { createProjectInputSchema, projectAuthorSchema } from "@/lib/projects"
+import {
+  createProjectInputSchema,
+  projectAuthorSchema,
+  withReplacedProjectFile,
+  type Project,
+} from "@/lib/projects"
 
 describe("project schemas", () => {
   it("accepts multiple files and optional author identifiers", () => {
@@ -57,5 +62,62 @@ describe("project schemas", () => {
         orcid: "1234",
       }).success
     ).toBe(false)
+  })
+
+  it("replaces a project file without moving the file slot", () => {
+    const project: Project = {
+      schemaVersion: 1,
+      id: "416d1b34-b331-4f18-8224-39f8a149908f",
+      title: "Study",
+      description: "Description",
+      authors: [
+        {
+          name: "Researcher",
+          designation: "Professor",
+          university: "University",
+        },
+      ],
+      files: [
+        {
+          key: "old-key",
+          hash: "a".repeat(64),
+          name: "manuscript.pdf",
+          size: 100,
+          uploadedAt: "2026-08-26T10:00:00.000Z",
+          url: "https://paper-amigo.ufs.sh/f/old-key",
+        },
+        {
+          key: "appendix-key",
+          hash: "b".repeat(64),
+          name: "appendix.pdf",
+          size: 200,
+          uploadedAt: "2026-08-26T10:00:00.000Z",
+          url: "https://paper-amigo.ufs.sh/f/appendix-key",
+        },
+      ],
+      createdAt: "2026-08-26T10:00:00.000Z",
+      updatedAt: "2026-08-26T10:00:00.000Z",
+    }
+
+    const replaced = withReplacedProjectFile(
+      project,
+      "old-key",
+      {
+        key: "new-key",
+        hash: "c".repeat(64),
+        name: "revised.pdf",
+        size: 300,
+        url: "https://paper-amigo.ufs.sh/f/new-key",
+      },
+      "2026-08-27T10:00:00.000Z",
+      "2026-08-27T10:00:01.000Z"
+    )
+
+    expect(replaced.files.map((file) => file.key)).toEqual([
+      "new-key",
+      "appendix-key",
+    ])
+    expect(replaced.createdAt).toBe(project.createdAt)
+    expect(replaced.updatedAt).toBe("2026-08-27T10:00:01.000Z")
   })
 })

@@ -9,7 +9,9 @@ import {
   discoverPdfPaths,
   parseCliArguments,
   parseCliAuthor,
+  resolveProjectFile,
 } from "@/cli/core"
+import type { Project } from "@/lib/projects"
 
 const temporaryDirectories: string[] = []
 
@@ -92,6 +94,77 @@ describe("parseCliArguments", () => {
   it("requires project metadata", () => {
     expect(() => parseCliArguments(["project", "create", "paper.pdf"])).toThrow(
       "project create needs --title"
+    )
+  })
+
+  it("parses a project file replacement", () => {
+    expect(
+      parseCliArguments([
+        "project",
+        "replace",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+        "manuscript.pdf",
+        "revised.pdf",
+        "--json",
+      ])
+    ).toEqual({
+      kind: "project-replace",
+      json: true,
+      path: "revised.pdf",
+      projectId: "416d1b34-b331-4f18-8224-39f8a149908f",
+      target: "manuscript.pdf",
+    })
+  })
+
+  it("requires all project replacement operands", () => {
+    expect(() =>
+      parseCliArguments(["project", "replace", "project-id", "paper.pdf"])
+    ).toThrow("project replace needs")
+  })
+})
+
+describe("resolveProjectFile", () => {
+  const project: Project = {
+    schemaVersion: 1,
+    id: "416d1b34-b331-4f18-8224-39f8a149908f",
+    title: "Study",
+    description: "Description",
+    authors: [
+      {
+        name: "Researcher",
+        designation: "Professor",
+        university: "University",
+      },
+    ],
+    files: [
+      {
+        key: "key-one",
+        hash: "a".repeat(64),
+        name: "manuscript.pdf",
+        size: 100,
+        uploadedAt: "2026-08-26T10:00:00.000Z",
+        url: "https://paper-amigo.ufs.sh/f/key-one",
+      },
+      {
+        key: "key-two",
+        hash: "b".repeat(64),
+        name: "manuscript.pdf",
+        size: 200,
+        uploadedAt: "2026-08-26T10:00:00.000Z",
+        url: "https://paper-amigo.ufs.sh/f/key-two",
+      },
+    ],
+    createdAt: "2026-08-26T10:00:00.000Z",
+    updatedAt: "2026-08-26T10:00:00.000Z",
+  }
+
+  it("prefers an exact storage key", () => {
+    expect(resolveProjectFile(project, "key-two").key).toBe("key-two")
+  })
+
+  it("rejects an ambiguous filename", () => {
+    expect(() => resolveProjectFile(project, "manuscript.pdf")).toThrow(
+      "use a file key"
     )
   })
 })

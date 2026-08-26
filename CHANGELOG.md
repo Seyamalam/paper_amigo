@@ -6,6 +6,19 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ## Unreleased
 
+## 0.3.0 (2026-08-27)
+
+### Features
+
+- Add an authenticated project-file replacement API and CLI command.
+- Preserve project file order and existing share links when replacing a PDF.
+- Add a responsive PDF.js canvas viewer with built-in page navigation.
+
+### Fixed
+
+- Replace browser PDF-plugin embeds that failed to preview on some browsers and
+  mobile devices.
+
 ## 0.2.0 (2026-08-27)
 
 ### Features

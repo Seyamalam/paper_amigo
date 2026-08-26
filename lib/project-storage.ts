@@ -5,8 +5,11 @@ import { UTApi, UTFile } from "uploadthing/server"
 import {
   createProjectInputSchema,
   projectSchema,
+  replaceProjectFileInputSchema,
+  withReplacedProjectFile,
   type CreateProjectInput,
   type Project,
+  type ReplaceProjectFileInput,
   type UploadedProjectFile,
 } from "@/lib/projects"
 import { projectFileHashFromCustomId } from "@/lib/project-file-identity"
@@ -23,6 +26,11 @@ type StoredFile = Readonly<{
 export type ProjectLibraryState =
   | Readonly<{ kind: "unconfigured"; projects: readonly Project[] }>
   | Readonly<{ kind: "ready"; projects: readonly Project[] }>
+
+export type ReplacedProjectFile = Readonly<{
+  project: Project
+  previousFileDeleted: boolean
+}>
 
 const manifestNamePrefix = "paper-amigo-project."
 const manifestCustomIdPrefix = "pa-project-"
@@ -145,6 +153,49 @@ async function readProjects(files: readonly StoredFile[]): Promise<Project[]> {
   )
 }
 
+function nextProjectTimestamp(previous?: string): string {
+  const now = Date.now()
+  const previousTime = previous ? new Date(previous).getTime() : 0
+
+  return new Date(Math.max(now, previousTime + 1)).toISOString()
+}
+
+async function uploadProjectManifest(
+  uploadThing: UTApi,
+  project: Project
+): Promise<void> {
+  const revision = new Date(project.updatedAt).getTime().toString(36)
+  const manifest = new UTFile(
+    [JSON.stringify(project)],
+    `${manifestNamePrefix}${project.id}.${revision}.json`,
+    {
+      customId: `${manifestCustomIdPrefix}${project.id}-${revision}`,
+      type: "application/json",
+    }
+  )
+  const uploaded = await uploadThing.uploadFiles(manifest, {
+    acl: "public-read",
+    contentDisposition: "inline",
+  })
+
+  if (uploaded.error) {
+    throw new Error(`Project metadata upload failed: ${uploaded.error.message}`)
+  }
+}
+
+async function safelyDeleteFile(
+  uploadThing: UTApi,
+  fileKey: string
+): Promise<boolean> {
+  try {
+    const deleted = await uploadThing.deleteFiles(fileKey)
+
+    return deleted.success
+  } catch {
+    return false
+  }
+}
+
 export function isProjectStorageConfigured(): boolean {
   return getUploadThingToken() !== undefined
 }
@@ -237,7 +288,7 @@ export async function createProject(
     }
 
     const inputByKey = new Map(input.files.map((file) => [file.key, file]))
-    const now = new Date().toISOString()
+    const now = nextProjectTimestamp()
     const project = projectSchema.parse({
       ...input,
       schemaVersion: 1,
@@ -252,29 +303,106 @@ export async function createProject(
       createdAt: now,
       updatedAt: now,
     })
-    const revision = Date.now().toString(36)
-    const manifest = new UTFile(
-      [JSON.stringify(project)],
-      `${manifestNamePrefix}${project.id}.${revision}.json`,
-      {
-        customId: `${manifestCustomIdPrefix}${project.id}-${revision}`,
-        type: "application/json",
-      }
-    )
-    const uploaded = await uploadThing.uploadFiles(manifest, {
-      acl: "public-read",
-      contentDisposition: "inline",
-    })
-
-    if (uploaded.error) {
-      throw new Error(
-        `Project metadata upload failed: ${uploaded.error.message}`
-      )
-    }
+    await uploadProjectManifest(uploadThing, project)
 
     return project
   } catch (error) {
-    await uploadThing.deleteFiles(verifiedFiles.map((file) => file.key))
+    await Promise.all(
+      verifiedFiles.map((file) => safelyDeleteFile(uploadThing, file.key))
+    )
     throw error
+  }
+}
+
+export async function replaceProjectFile(
+  projectId: string,
+  targetFileKey: string,
+  rawInput: ReplaceProjectFileInput
+): Promise<ReplacedProjectFile> {
+  const input = replaceProjectFileInputSchema.parse(rawInput)
+  const uploadThing = getUploadThingApi()
+  const storedFiles = await listStoredFiles()
+  const [storedReplacement] = verifyUploadedFiles([input.file], storedFiles)
+
+  if (!storedReplacement) {
+    throw new Error("Replacement PDF could not be verified")
+  }
+
+  const projects = await readProjects(storedFiles)
+  const project = projects.find((candidate) => candidate.id === projectId)
+  const referencedFiles = projects.flatMap((candidate) =>
+    candidate.files.map((file) => ({ file, projectId: candidate.id }))
+  )
+  const referenceByKey = referencedFiles.find(
+    (reference) => reference.file.key === input.file.key
+  )
+
+  if (referenceByKey) {
+    if (!project) {
+      throw new Error("Replacement PDF is already attached to a project")
+    }
+
+    const isCompletedReplacement =
+      referenceByKey.projectId === projectId &&
+      referenceByKey.file.hash === input.file.hash &&
+      referenceByKey.file.name === input.file.name &&
+      referenceByKey.file.size === input.file.size &&
+      referenceByKey.file.url === input.file.url &&
+      !project.files.some((file) => file.key === targetFileKey)
+
+    if (!isCompletedReplacement) {
+      throw new Error("Replacement PDF is already attached to a project")
+    }
+
+    const previousFileStillStored = storedFiles.some(
+      (file) => file.key === targetFileKey && file.status === "Uploaded"
+    )
+    const previousFileDeleted = previousFileStillStored
+      ? await safelyDeleteFile(uploadThing, targetFileKey)
+      : true
+
+    return { project, previousFileDeleted }
+  }
+
+  const referenceByHash = referencedFiles.find(
+    (reference) => reference.file.hash === input.file.hash
+  )
+
+  if (referenceByHash) {
+    await safelyDeleteFile(uploadThing, input.file.key)
+    throw new Error("Replacement PDF content is already in the library")
+  }
+
+  if (!project) {
+    await safelyDeleteFile(uploadThing, input.file.key)
+    throw new Error("Project not found")
+  }
+
+  const target = project.files.find((file) => file.key === targetFileKey)
+
+  if (!target) {
+    await safelyDeleteFile(uploadThing, input.file.key)
+    throw new Error("Project file not found")
+  }
+
+  let replacementProject: Project
+
+  try {
+    replacementProject = withReplacedProjectFile(
+      project,
+      target.key,
+      input.file,
+      timestampToIso(storedReplacement.uploadedAt),
+      nextProjectTimestamp(project.updatedAt)
+    )
+    await uploadProjectManifest(uploadThing, replacementProject)
+  } catch (error) {
+    await safelyDeleteFile(uploadThing, input.file.key)
+    throw error
+  }
+
+  return {
+    project: replacementProject,
+    previousFileDeleted: await safelyDeleteFile(uploadThing, target.key),
   }
 }

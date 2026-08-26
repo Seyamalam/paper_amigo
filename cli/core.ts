@@ -1,7 +1,7 @@
 import { lstat, readdir } from "node:fs/promises"
 import { resolve } from "node:path"
 
-import type { ProjectAuthor } from "../lib/projects"
+import type { Project, ProjectAuthor, ProjectFile } from "../lib/projects"
 
 export type CliCommand =
   | Readonly<{ kind: "doctor"; json: boolean }>
@@ -19,6 +19,13 @@ export type CliCommand =
       paths: readonly string[]
       recursive: boolean
       title: string
+    }>
+  | Readonly<{
+      kind: "project-replace"
+      json: boolean
+      path: string
+      projectId: string
+      target: string
     }>
 
 export type DiscoveryFailure = Readonly<{
@@ -206,6 +213,37 @@ function parseProjectCreateCommand(arguments_: readonly string[]): CliCommand {
   }
 }
 
+function parseProjectReplaceCommand(arguments_: readonly string[]): CliCommand {
+  const operands: string[] = []
+  let json = false
+
+  for (const argument of arguments_) {
+    if (argument === "--json") {
+      json = true
+    } else if (argument === "--help" || argument === "-h") {
+      return { kind: "help" }
+    } else if (argument.startsWith("-")) {
+      throw new CliUsageError(`Unknown option: ${argument}`)
+    } else {
+      operands.push(argument)
+    }
+  }
+
+  if (operands.length !== 3) {
+    throw new CliUsageError(
+      "project replace needs <project-id> <current-file-name-or-key> <replacement.pdf>"
+    )
+  }
+
+  const [projectId, target, path] = operands
+
+  if (!projectId || !target || !path) {
+    throw new CliUsageError("project replace has invalid arguments")
+  }
+
+  return { kind: "project-replace", json, path, projectId, target }
+}
+
 export function parseCliArguments(arguments_: readonly string[]): CliCommand {
   const [command, ...rest] = arguments_
 
@@ -232,10 +270,14 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
       return parseSimpleCommand("list", projectArguments)
     }
 
+    if (subcommand === "replace") {
+      return parseProjectReplaceCommand(projectArguments)
+    }
+
     throw new CliUsageError(
       subcommand
         ? `Unknown project command: ${subcommand}`
-        : "project needs create or list"
+        : "project needs create, list, or replace"
     )
   }
 
@@ -243,7 +285,38 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
     return parseProjectCreateCommand(rest)
   }
 
+  if (command === "replace") {
+    return parseProjectReplaceCommand(rest)
+  }
+
   throw new CliUsageError(`Unknown command: ${command}`)
+}
+
+export function resolveProjectFile(
+  project: Project,
+  selector: string
+): ProjectFile {
+  const keyMatch = project.files.find((file) => file.key === selector)
+
+  if (keyMatch) {
+    return keyMatch
+  }
+
+  const nameMatches = project.files.filter((file) => file.name === selector)
+
+  if (nameMatches.length === 1 && nameMatches[0]) {
+    return nameMatches[0]
+  }
+
+  if (nameMatches.length > 1) {
+    throw new CliUsageError(
+      `Multiple project files are named ${JSON.stringify(selector)}; use a file key`
+    )
+  }
+
+  throw new CliUsageError(
+    `Project file ${JSON.stringify(selector)} was not found`
+  )
 }
 
 function isPdfPath(path: string): boolean {

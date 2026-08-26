@@ -34,6 +34,11 @@ The act of creating a project and attaching one or more project files from a
 local filesystem.
 _Avoid_: Import, sync
 
+**Replacement**:
+Substituting one project file with a newer PDF. The prior file stops being part
+of the project, while the project and its share links remain the same.
+_Avoid_: Edit, overwrite
+
 **Share link**:
 A revocable secret link that grants recipient access to one project.
 _Avoid_: Public link, download link

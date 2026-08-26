@@ -24,6 +24,8 @@ profile URL are optional.
   against UploadThing before creating a project.
 - Calculate a SHA-256 hash before upload and reject duplicate PDF content.
 - Roll back uploaded PDFs when project creation is incomplete.
+- Commit a replacement project manifest before deleting the prior PDF, and keep
+  the replacement upload when deletion of the prior PDF fails.
 - Encrypt share-link, view, and critique records before placing them in
   public-read storage.
 
@@ -55,12 +57,19 @@ paper-amigo doctor [--json]
 paper-amigo project list [--json]
 paper-amigo project create <path...> --title <title> --description <text> \
   --author "Name|Designation|University|ORCID|Profile URL"
+paper-amigo project replace <project-id> <current-file-name-or-key> \
+  <replacement.pdf> [--json]
 ```
 
 Project creation supports repeated `--author`, `--recursive`, `--dry-run`,
 `--json`, and `--concurrency <1-8>`. It accepts relative or absolute files and
 directories from any working directory. The agent skill calls the CLI rather
 than reimplementing storage or authentication.
+
+Project replacement accepts one local PDF and identifies the current project
+file by exact filename or storage key. It rejects duplicate content, preserves
+the file's project position, updates existing share links, and removes the prior
+PDF only after the replacement manifest is durable.
 
 ## Sharing and critiques
 

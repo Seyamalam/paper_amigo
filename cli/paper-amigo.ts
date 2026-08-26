@@ -2,7 +2,7 @@
 
 import { createHash, randomUUID } from "node:crypto"
 import { readFile, stat } from "node:fs/promises"
-import { basename } from "node:path"
+import { basename, resolve } from "node:path"
 
 import {
   CliRequestError,
@@ -11,6 +11,7 @@ import {
   doctor,
   findDuplicates,
   listProjects,
+  replaceProjectFile,
   uploadPdf,
 } from "./client"
 import { clearLogin, loadCliConfiguration, saveLogin } from "./credentials"
@@ -19,6 +20,7 @@ import {
   discoverPdfPaths,
   mapWithConcurrency,
   parseCliArguments,
+  resolveProjectFile,
   type DiscoveryFailure,
 } from "./core"
 import { getPdfValidationError, maxPdfBatchSize } from "../lib/paper-upload"
@@ -34,10 +36,13 @@ Usage:
       --author "Name|Designation|University|ORCID|Profile URL"
       [--author <author>...] [--recursive] [--dry-run] [--json]
       [--concurrency <1-8>]
+  paper-amigo project replace <project-id> <current-file-name-or-key>
+      <replacement.pdf> [--json]
 
 Aliases:
   paper-amigo list
   paper-amigo upload <options for project create>
+  paper-amigo replace <options for project replace>
 
 Run paper-amigo login again to update the saved email or password.
 `
@@ -368,6 +373,117 @@ async function runProjectCreate(
   return projectId ? 0 : 1
 }
 
+async function runProjectReplace(
+  command: Extract<
+    ReturnType<typeof parseCliArguments>,
+    { kind: "project-replace" }
+  >
+): Promise<number> {
+  const replacementPath = resolve(command.path)
+  const discovery = await discoverPdfPaths([command.path], false)
+
+  if (
+    discovery.failed.length > 0 ||
+    discovery.paths.length !== 1 ||
+    discovery.paths[0] !== replacementPath
+  ) {
+    throw new CliUsageError(
+      discovery.failed[0]?.reason ?? "Replacement must be one PDF file"
+    )
+  }
+
+  const prepared = await prepareCandidate(replacementPath)
+
+  if (isUploadIssue(prepared)) {
+    throw new CliUsageError(prepared.reason)
+  }
+
+  const configuration = await loadCliConfiguration(process.env)
+  const projects = await listProjects(configuration)
+  const project = projects.find(
+    (candidate) => candidate.id === command.projectId
+  )
+
+  if (!project) {
+    throw new CliUsageError(`Project ${command.projectId} was not found`)
+  }
+
+  const target = resolveProjectFile(project, command.target)
+
+  if (prepared.hash === target.hash) {
+    throw new CliUsageError("Replacement PDF is identical to the current file")
+  }
+
+  if ((await findDuplicates(configuration, [prepared.hash])).size > 0) {
+    throw new CliUsageError("Replacement PDF content is already in the library")
+  }
+
+  const bytes = await readFile(prepared.path)
+  const file = new File([bytes], prepared.name, {
+    lastModified: prepared.lastModified,
+    type: "application/pdf",
+  })
+  const uploaded = await uploadPdf(configuration, file, prepared.hash)
+  let replacement
+
+  try {
+    replacement = await replaceProjectFile(
+      configuration,
+      project.id,
+      target.key,
+      {
+        file: uploaded,
+      }
+    )
+  } catch (error) {
+    if (!(error instanceof CliRequestError) || error.code !== "network-error") {
+      throw error
+    }
+
+    try {
+      replacement = await replaceProjectFile(
+        configuration,
+        project.id,
+        target.key,
+        { file: uploaded }
+      )
+    } catch (retryError) {
+      if (
+        retryError instanceof CliRequestError &&
+        retryError.code === "network-error"
+      ) {
+        throw new CliRequestError(
+          "Could not confirm the replacement. Run project list before retrying",
+          "replacement-status-unknown"
+        )
+      }
+
+      throw retryError
+    }
+  }
+
+  const result = {
+    command: "project-replace" as const,
+    projectId: project.id,
+    previous: target,
+    replacement: { ...uploaded, path: prepared.path },
+    previousFileDeleted: replacement.previousFileDeleted,
+  }
+
+  if (command.json) {
+    write(JSON.stringify(result, undefined, 2))
+  } else {
+    write(`replaced\t${target.name}\t${prepared.path}`)
+    write(`project\t${project.id}`)
+
+    if (!replacement.previousFileDeleted) {
+      writeError("warning\tThe prior PDF could not be removed from storage")
+    }
+  }
+
+  return 0
+}
+
 async function main(): Promise<number> {
   const command = parseCliArguments(process.argv.slice(2))
 
@@ -378,6 +494,10 @@ async function main(): Promise<number> {
 
   if (command.kind === "project-create") {
     return runProjectCreate(command)
+  }
+
+  if (command.kind === "project-replace") {
+    return runProjectReplace(command)
   }
 
   if (command.kind === "login") {

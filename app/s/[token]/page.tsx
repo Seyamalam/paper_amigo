@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { Brand } from "@/components/paper-amigo/brand"
 import { CritiqueForm } from "@/components/paper-amigo/critique-form"
+import { PdfViewer } from "@/components/paper-amigo/pdf-viewer"
 import { ShareViewTracker } from "@/components/paper-amigo/share-view-tracker"
 import { Badge } from "@/components/ui/badge"
 import { formatFileSize } from "@/lib/paper-upload"
@@ -93,26 +94,12 @@ export default async function SharedProjectPage({
           </nav>
         ) : null}
 
-        <section
-          className="mt-5 border bg-neutral-100 p-2 sm:p-5 dark:bg-neutral-950"
-          aria-label="PDF viewer"
-        >
-          <div className="mb-2 flex items-center justify-between gap-3 bg-black px-3 py-2 font-mono text-[9px] tracking-wide text-white uppercase sm:mb-4 dark:border dark:border-white/20">
-            <span className="flex min-w-0 items-center gap-2">
-              <FileText aria-hidden="true" className="size-3 shrink-0" />
-              <span className="truncate">{selectedFile.name}</span>
-            </span>
-            <span>{formatFileSize(selectedFile.size)}</span>
+        <div className="mt-5">
+          <div className="flex items-center justify-end bg-black px-3 py-2 font-mono text-[9px] tracking-wide text-white uppercase dark:border dark:border-white/20">
+            {formatFileSize(selectedFile.size)}
           </div>
-          <object
-            data={`${selectedFile.url}#toolbar=0&navpanes=0`}
-            type="application/pdf"
-            aria-label={selectedFile.name}
-            className="h-[72svh] min-h-[32rem] w-full bg-white"
-          >
-            <p className="p-6 text-sm text-black">Preview unavailable</p>
-          </object>
-        </section>
+          <PdfViewer url={selectedFile.url} name={selectedFile.name} />
+        </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
           <CritiqueForm

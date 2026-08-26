@@ -1,11 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink, FileText, Share2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, Share2 } from "lucide-react"
 import { z } from "zod"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CritiqueList } from "@/components/paper-amigo/critique-list"
+import { PdfViewer } from "@/components/paper-amigo/pdf-viewer"
 import { ShareLinkPanel } from "@/components/paper-amigo/share-link-panel"
 import { getProject } from "@/lib/project-storage"
 import { formatFileSize } from "@/lib/paper-upload"
@@ -78,26 +79,12 @@ export default async function ProjectPage({
       </header>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
-        <section
-          aria-label="PDF viewer"
-          className="border bg-neutral-100 p-2 sm:p-5 dark:bg-neutral-950"
-        >
-          <div className="mb-2 flex items-center justify-between gap-3 bg-black px-3 py-2 font-mono text-[9px] tracking-wide text-white uppercase sm:mb-4 dark:border dark:border-white/20">
-            <span className="flex min-w-0 items-center gap-2">
-              <FileText aria-hidden="true" className="size-3 shrink-0" />
-              <span className="truncate">{selectedFile.name}</span>
-            </span>
-            <span>{formatFileSize(selectedFile.size)}</span>
+        <div>
+          <div className="flex items-center justify-end bg-black px-3 py-2 font-mono text-[9px] tracking-wide text-white uppercase dark:border dark:border-white/20">
+            {formatFileSize(selectedFile.size)}
           </div>
-          <object
-            data={`${selectedFile.url}#toolbar=0&navpanes=0`}
-            type="application/pdf"
-            aria-label={selectedFile.name}
-            className="h-[calc(100svh-13rem)] min-h-[32rem] w-full bg-white"
-          >
-            <p className="p-6 text-sm text-black">Preview unavailable</p>
-          </object>
-        </section>
+          <PdfViewer url={selectedFile.url} name={selectedFile.name} />
+        </div>
 
         <aside className="space-y-3">
           <section className="border bg-card p-4">

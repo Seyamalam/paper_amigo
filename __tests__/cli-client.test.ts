@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   CliRequestError,
   defaultPaperAmigoUrl,
   readCliConfiguration,
+  replaceProjectFile,
 } from "@/cli/client"
 
 const storedCredentials = {
@@ -11,6 +12,10 @@ const storedCredentials = {
   email: "owner@example.com",
   password: "saved-password",
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe("readCliConfiguration", () => {
   it("uses a saved login and the production URL", () => {
@@ -52,5 +57,82 @@ describe("readCliConfiguration", () => {
         storedCredentials
       )
     ).toThrow("PAPER_AMIGO_URL must use HTTPS outside localhost")
+  })
+})
+
+describe("replaceProjectFile", () => {
+  it("sends an authenticated replacement request", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        project: {
+          schemaVersion: 1,
+          id: "416d1b34-b331-4f18-8224-39f8a149908f",
+          title: "Study",
+          description: "Description",
+          authors: [
+            {
+              name: "Researcher",
+              designation: "Professor",
+              university: "University",
+            },
+          ],
+          files: [
+            {
+              key: "new-key",
+              hash: "b".repeat(64),
+              name: "revised.pdf",
+              size: 200,
+              uploadedAt: "2026-08-27T10:00:00.000Z",
+              url: "https://paper-amigo.ufs.sh/f/new-key",
+            },
+          ],
+          createdAt: "2026-08-26T10:00:00.000Z",
+          updatedAt: "2026-08-27T10:00:01.000Z",
+        },
+        previousFileDeleted: true,
+      })
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const configuration = readCliConfiguration({}, storedCredentials)
+
+    const result = await replaceProjectFile(
+      configuration,
+      "416d1b34-b331-4f18-8224-39f8a149908f",
+      "old/key",
+      {
+        file: {
+          key: "new-key",
+          hash: "b".repeat(64),
+          name: "revised.pdf",
+          size: 200,
+          url: "https://paper-amigo.ufs.sh/f/new-key",
+        },
+      }
+    )
+
+    expect(result.previousFileDeleted).toBe(true)
+    const firstCall = fetchMock.mock.calls[0]
+
+    expect(firstCall).toBeDefined()
+
+    if (!firstCall) {
+      throw new Error("Replacement request was not sent")
+    }
+
+    const [requestUrl, request] = firstCall
+
+    expect(requestUrl).toBeInstanceOf(URL)
+
+    if (!(requestUrl instanceof URL)) {
+      throw new Error("Replacement URL was not normalized")
+    }
+
+    expect(requestUrl.pathname).toBe(
+      "/api/projects/416d1b34-b331-4f18-8224-39f8a149908f/files/old%2Fkey"
+    )
+    expect(request?.method).toBe("PUT")
+    expect(new Headers(request?.headers).get("Authorization")).toBe(
+      configuration.authorization
+    )
   })
 })

@@ -1,6 +1,6 @@
 ---
 name: paper-amigo
-description: Create and list Paper Amigo research projects from local PDF files using the installed owner-authenticated CLI.
+description: Create, list, and replace files in Paper Amigo research projects using the installed owner-authenticated CLI.
 ---
 
 # Paper Amigo
@@ -54,3 +54,27 @@ paper-amigo project list --json
 ```
 
 Use the returned project IDs and metadata as the source of truth.
+
+## Replace a project file
+
+List projects first when the project ID, filename, or storage key is uncertain:
+
+```bash
+paper-amigo project list --json
+```
+
+Replace exactly one current project file with one local PDF:
+
+```bash
+paper-amigo project replace <project-id> <current-file-name-or-key> \
+  <replacement.pdf> --json
+```
+
+The selector accepts an exact filename or storage key. If a project contains
+duplicate filenames, use the key returned by `project list`. The command rejects
+an identical PDF and PDF content already present anywhere in the library.
+
+Treat `replacement-status-unknown` specially: run `project list --json` and
+inspect the target project before retrying. A timed-out request may already have
+committed the replacement. Do not upload or delete files through UploadThing
+directly.

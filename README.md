@@ -6,7 +6,7 @@ Tailwind CSS, and shadcn/ui.
 ## Requirements
 
 - Bun 1.4.0
-- Node.js 20.9.0 or newer, for Next.js and Node-based development tools
+- Node.js 20.16.0 or newer, for Next.js, PDF.js, and Node-based development tools
 
 ## Start the app
 
@@ -66,7 +66,8 @@ The owner can create labeled secret links from a project page. Recipients open
 those links without signing in, switch between project PDFs, and leave a comment
 on a specific PDF with an optional page number. The app counts total opens and
 estimated unique browsers. It stores share links, views, and critiques as
-encrypted append-only UploadThing records.
+encrypted append-only UploadThing records. PDF pages render in an in-app canvas
+instead of depending on a browser PDF plugin.
 
 ## CLI
 
@@ -84,6 +85,8 @@ bun run cli project create ./research --recursive \
   --title "Project title" \
   --description "Project description" \
   --author "Name|Designation|University|ORCID|Profile URL"
+bun run cli project replace <project-id> <current-file-name-or-key> \
+  ./revised.pdf --json
 ```
 
 Install the `paper-amigo` command from this checkout with `bun link`:
@@ -111,10 +114,17 @@ Use `paper-amigo project list --json` to list projects. Repeat `--author` for
 multiple authors. `project create` accepts `--dry-run`, `--json`, `--recursive`,
 and `--concurrency <1-8>`. The older `list` and `upload` names remain aliases.
 Directory scans ignore non-PDF files. Explicit non-PDF paths and failed uploads
-produce a nonzero exit code. The CLI never prints credentials.
+produce a nonzero exit code.
 
-The agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and delegates
-all file discovery, hashing, authentication, and upload work to the CLI.
+Use `paper-amigo project replace <project-id> <current-file-name-or-key>
+<replacement.pdf> --json` to replace exactly one project file. The selector may
+be an exact filename or the file key returned by `project list --json`. Existing
+share links immediately resolve the new project manifest. The previous PDF is
+removed only after that manifest is committed. The CLI never prints credentials.
+
+The versioned agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and
+delegates file discovery, hashing, authentication, upload, and replacement work
+to the CLI.
 
 ## Quality checks
 

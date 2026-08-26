@@ -11,7 +11,9 @@ import {
 import {
   createProjectInputSchema,
   projectSchema,
+  replaceProjectFileResponseSchema,
   type CreateProjectInput,
+  type ReplaceProjectFileInput,
   type UploadedProjectFile,
 } from "../lib/projects"
 import { duplicateCheckResponseSchema } from "../lib/paper-upload"
@@ -243,6 +245,35 @@ export async function createProject(
   }
 
   return parsed.data.project
+}
+
+export async function replaceProjectFile(
+  configuration: CliConfiguration,
+  projectId: string,
+  fileKey: string,
+  input: ReplaceProjectFileInput
+) {
+  const response = await fetchAuthenticated(
+    configuration,
+    `/api/projects/${encodeURIComponent(projectId)}/files/${encodeURIComponent(fileKey)}`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: "PUT",
+    }
+  )
+  const parsed = replaceProjectFileResponseSchema.safeParse(
+    await response.json().catch(() => undefined)
+  )
+
+  if (!parsed.success) {
+    throw new CliRequestError(
+      "Server returned an invalid response",
+      "invalid-response"
+    )
+  }
+
+  return parsed.data
 }
 
 export async function discardUploads(

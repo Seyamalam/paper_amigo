@@ -41,6 +41,10 @@ export const createProjectInputSchema = z.object({
   files: z.array(uploadedProjectFileSchema).min(1).max(10),
 })
 
+export const replaceProjectFileInputSchema = z.object({
+  file: uploadedProjectFileSchema,
+})
+
 export const projectSchema = createProjectInputSchema
   .omit({ files: true })
   .extend({
@@ -54,8 +58,39 @@ export const projectsResponseSchema = z.object({
   projects: z.array(projectSchema),
 })
 
+export const replaceProjectFileResponseSchema = z.object({
+  project: projectSchema,
+  previousFileDeleted: z.boolean(),
+})
+
+export function withReplacedProjectFile(
+  project: Project,
+  targetFileKey: string,
+  replacement: UploadedProjectFile,
+  uploadedAt: string,
+  updatedAt: string
+): Project {
+  if (!project.files.some((file) => file.key === targetFileKey)) {
+    throw new Error("Project file not found")
+  }
+
+  return projectSchema.parse({
+    ...project,
+    files: project.files.map((file) =>
+      file.key === targetFileKey ? { ...replacement, uploadedAt } : file
+    ),
+    updatedAt,
+  })
+}
+
 export type ProjectAuthor = z.infer<typeof projectAuthorSchema>
 export type ProjectFile = z.infer<typeof projectFileSchema>
 export type UploadedProjectFile = z.infer<typeof uploadedProjectFileSchema>
 export type CreateProjectInput = z.infer<typeof createProjectInputSchema>
+export type ReplaceProjectFileInput = z.infer<
+  typeof replaceProjectFileInputSchema
+>
+export type ReplaceProjectFileResponse = z.infer<
+  typeof replaceProjectFileResponseSchema
+>
 export type Project = z.infer<typeof projectSchema>
