@@ -9,6 +9,7 @@ import {
   type Project,
   type UploadedProjectFile,
 } from "@/lib/projects"
+import { projectFileHashFromCustomId } from "@/lib/project-file-identity"
 
 type StoredFile = Readonly<{
   name: string
@@ -173,11 +174,15 @@ export async function findDuplicatePaperHashes(
   const requested = new Set(hashes)
   const files = await listStoredFiles()
 
-  return files.flatMap((file) =>
-    isUploadedPdf(file) && file.customId && requested.has(file.customId)
-      ? [file.customId]
-      : []
-  )
+  return files.flatMap((file) => {
+    if (!isUploadedPdf(file)) {
+      return []
+    }
+
+    const hash = projectFileHashFromCustomId(file.customId)
+
+    return hash && requested.has(hash) ? [hash] : []
+  })
 }
 
 function verifyUploadedFiles(
@@ -192,7 +197,8 @@ function verifyUploadedFiles(
     const stored = storedByKey.get(file.key)
 
     if (
-      stored?.customId !== file.hash ||
+      !stored ||
+      projectFileHashFromCustomId(stored.customId) !== file.hash ||
       stored.name !== file.name ||
       stored.size !== file.size ||
       !isMatchingPublicUrl(file.url, file.key)

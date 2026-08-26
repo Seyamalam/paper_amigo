@@ -7,6 +7,10 @@ import {
   findDuplicatePaperHashes,
   isProjectStorageConfigured,
 } from "@/lib/project-storage"
+import {
+  createProjectFileCustomId,
+  projectFileHashFromCustomId,
+} from "@/lib/project-file-identity"
 import { paperUploadInputSchema } from "@/lib/paper-upload"
 
 const uploadThing = createUploadthing()
@@ -67,7 +71,7 @@ export const paperFileRouter = {
         }
 
         return {
-          customId,
+          customId: createProjectFileCustomId(customId),
           lastModified: file.lastModified,
           name: file.name,
           size: file.size,
@@ -80,13 +84,21 @@ export const paperFileRouter = {
         [UTFiles]: filesWithIds,
       }
     })
-    .onUploadComplete(({ file }) => ({
-      hash: file.customId ?? file.key,
-      key: file.key,
-      name: file.name,
-      size: file.size,
-      url: file.ufsUrl,
-    })),
+    .onUploadComplete(({ file }) => {
+      const hash = projectFileHashFromCustomId(file.customId)
+
+      if (!hash) {
+        throw new Error("Uploaded PDF has an invalid storage ID")
+      }
+
+      return {
+        hash,
+        key: file.key,
+        name: file.name,
+        size: file.size,
+        url: file.ufsUrl,
+      }
+    }),
 } satisfies FileRouter
 
 export type PaperFileRouter = typeof paperFileRouter
