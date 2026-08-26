@@ -46,7 +46,7 @@ function WorkspaceShell({
           <Brand />
           <div className="flex items-center gap-1">
             <OwnerAccount access={access} compact />
-            <Button asChild size="icon" aria-label="Upload papers">
+            <Button asChild size="icon" aria-label="Create project">
               <Link href="/upload">
                 <Plus aria-hidden="true" />
               </Link>

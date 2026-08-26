@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { authenticateBasicOwner, basicAuthHeaders } from "@/lib/owner-api-auth"
-import { getPaperLibrary, isPaperStorageConfigured } from "@/lib/paper-storage"
+import {
+  getProjectLibrary,
+  isProjectStorageConfigured,
+} from "@/lib/project-storage"
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!authenticateBasicOwner(request.headers.get("authorization"))) {
@@ -11,17 +14,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  if (!isPaperStorageConfigured()) {
+  if (!isProjectStorageConfigured()) {
     return NextResponse.json(
       { error: "UploadThing is not configured" },
       { headers: { "Cache-Control": "no-store" }, status: 503 }
     )
   }
 
-  const library = await getPaperLibrary()
+  const library = await getProjectLibrary()
 
   return NextResponse.json(
-    { papers: library.papers },
+    { projects: library.projects },
     { headers: { "Cache-Control": "no-store" } }
   )
 }

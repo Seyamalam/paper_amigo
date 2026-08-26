@@ -37,8 +37,9 @@ UPLOADTHING_TOKEN
 - Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password. The app accepts any
   non-empty value, but a password-manager-generated value with at least 12
   characters is recommended.
-- Create an UploadThing app, enable ACL overrides, and set its default ACL to
-  private. Copy its v7 token into `UPLOADTHING_TOKEN`.
+- Create an UploadThing app, enable ACL overrides, and copy its v7 token into
+  `UPLOADTHING_TOKEN`. PDFs and project manifests use `public-read` because the
+  free UploadThing tier does not provide private storage.
 - Keep all of these server-only. Do not add a `NEXT_PUBLIC_` prefix.
 
 The managed KV variables will be added after its provider is selected. Vercel
@@ -50,10 +51,14 @@ and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser
 The password remains in server environment configuration; browser sessions
 contain only the owner email in a seven-day encrypted JWE.
 
-Browser uploads accept up to ten PDFs per batch and 64 MB per file. The browser
-calculates SHA-256 before upload. UploadThing stores that hash as the custom file
-ID, so duplicate content is skipped without a paper database. Uploads run with
-three workers and report each file separately.
+One project has a title, description, one or more structured authors, and one to
+ten PDFs. Each author has a name, designation, university, and optional ORCID iD
+and profile URL. UploadThing stores a versioned JSON manifest beside the PDFs,
+so no application database is required. The browser calculates SHA-256 before
+upload and rejects duplicate content.
+
+Public-read URLs are unlisted but not access-controlled. Anyone with a PDF URL
+can open or download it; hiding download controls in the web UI is not DRM.
 
 ## CLI
 
@@ -67,7 +72,10 @@ Run it from this checkout:
 ```bash
 bun run cli login
 bun run cli doctor
-bun run cli upload ./research --recursive
+bun run cli project create ./research --recursive \
+  --title "Project title" \
+  --description "Project description" \
+  --author "Name|Designation|University|ORCID|Profile URL"
 ```
 
 Install the `paper-amigo` command from this checkout with `bun link`:
@@ -91,10 +99,14 @@ export PAPER_AMIGO_OWNER_EMAIL=owner@example.com
 export PAPER_AMIGO_OWNER_PASSWORD='owner-password'
 ```
 
-Use `--json` for agent-readable output. `upload` also accepts `--dry-run`; it
-discovers, validates, and hashes files without credentials or network access.
+Use `paper-amigo project list --json` to list projects. Repeat `--author` for
+multiple authors. `project create` accepts `--dry-run`, `--json`, `--recursive`,
+and `--concurrency <1-8>`. The older `list` and `upload` names remain aliases.
 Directory scans ignore non-PDF files. Explicit non-PDF paths and failed uploads
 produce a nonzero exit code. The CLI never prints credentials.
+
+The agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and delegates
+all file discovery, hashing, authentication, and upload work to the CLI.
 
 ## Quality checks
 

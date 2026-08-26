@@ -6,8 +6,14 @@ import { z } from "zod"
 import {
   ingestionDoctorResponseSchema,
   ingestionErrorSchema,
-  ingestionPapersResponseSchema,
+  ingestionProjectsResponseSchema,
 } from "../lib/ingestion-contract"
+import {
+  createProjectInputSchema,
+  projectSchema,
+  type CreateProjectInput,
+  type UploadedProjectFile,
+} from "../lib/projects"
 import { duplicateCheckResponseSchema } from "../lib/paper-upload"
 
 const presignedUploadSchema = z.object({
@@ -21,10 +27,15 @@ const presignedUploadsSchema = z.array(presignedUploadSchema).length(1)
 
 const storageUploadResponseSchema = z.object({
   serverData: z.object({
-    id: z.string().min(1),
+    hash: z.string().min(1),
+    key: z.string().min(1),
     name: z.string().min(1),
+    size: z.number().int().positive(),
+    url: z.url(),
   }),
 })
+
+const createProjectResponseSchema = z.object({ project: projectSchema })
 
 export const defaultPaperAmigoUrl = "https://paper-amigo.vercel.app"
 
@@ -194,12 +205,9 @@ export async function doctor(configuration: CliConfiguration) {
   return parsed.data
 }
 
-export async function listPapers(configuration: CliConfiguration) {
-  const response = await fetchAuthenticated(
-    configuration,
-    "/api/ingestion/papers"
-  )
-  const parsed = ingestionPapersResponseSchema.safeParse(
+export async function listProjects(configuration: CliConfiguration) {
+  const response = await fetchAuthenticated(configuration, "/api/projects")
+  const parsed = ingestionProjectsResponseSchema.safeParse(
     await response.json().catch(() => undefined)
   )
 
@@ -210,7 +218,46 @@ export async function listPapers(configuration: CliConfiguration) {
     )
   }
 
-  return parsed.data.papers
+  return parsed.data.projects
+}
+
+export async function createProject(
+  configuration: CliConfiguration,
+  input: CreateProjectInput
+) {
+  const validated = createProjectInputSchema.parse(input)
+  const response = await fetchAuthenticated(configuration, "/api/projects", {
+    body: JSON.stringify(validated),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  })
+  const parsed = createProjectResponseSchema.safeParse(
+    await response.json().catch(() => undefined)
+  )
+
+  if (!parsed.success) {
+    throw new CliRequestError(
+      "Server returned an invalid response",
+      "invalid-response"
+    )
+  }
+
+  return parsed.data.project
+}
+
+export async function discardUploads(
+  configuration: CliConfiguration,
+  files: readonly UploadedProjectFile[]
+): Promise<void> {
+  if (files.length === 0) {
+    return
+  }
+
+  await fetchAuthenticated(configuration, "/api/projects/uploads", {
+    body: JSON.stringify({ files }),
+    headers: { "Content-Type": "application/json" },
+    method: "DELETE",
+  })
 }
 
 export async function findDuplicates(
@@ -254,7 +301,7 @@ export async function uploadPdf(
   configuration: CliConfiguration,
   file: File,
   hash: string
-): Promise<Readonly<{ id: string; name: string }>> {
+): Promise<UploadedProjectFile> {
   const traces = traceHeaders()
   const uploadUrl = endpoint(configuration, "/api/uploadthing")
   uploadUrl.searchParams.set("actionType", "upload")

@@ -1,14 +1,16 @@
 #!/usr/bin/env bun
 
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { readFile, stat } from "node:fs/promises"
 import { basename } from "node:path"
 
 import {
   CliRequestError,
+  createProject,
+  discardUploads,
   doctor,
   findDuplicates,
-  listPapers,
+  listProjects,
   uploadPdf,
 } from "./client"
 import { clearLogin, loadCliConfiguration, saveLogin } from "./credentials"
@@ -27,9 +29,15 @@ Usage:
   paper-amigo login
   paper-amigo logout
   paper-amigo doctor [--json]
-  paper-amigo list [--json]
-  paper-amigo upload <path...> [--recursive] [--dry-run] [--json]
-                     [--concurrency <1-8>]
+  paper-amigo project list [--json]
+  paper-amigo project create <path...> --title <title> --description <text>
+      --author "Name|Designation|University|ORCID|Profile URL"
+      [--author <author>...] [--recursive] [--dry-run] [--json]
+      [--concurrency <1-8>]
+
+Aliases:
+  paper-amigo list
+  paper-amigo upload <options for project create>
 
 Run paper-amigo login again to update the saved email or password.
 `
@@ -49,9 +57,12 @@ type UploadIssue = Readonly<{
 }>
 
 type UploadedResult = Readonly<{
-  id: string
+  hash: string
+  key: string
   name: string
   path: string
+  size: number
+  url: string
 }>
 
 type SelectionSplit = Readonly<{
@@ -149,8 +160,9 @@ function issueFromDiscovery(failure: DiscoveryFailure): UploadIssue {
   return failure
 }
 
-function printUploadResult(result: {
+function printProjectResult(result: {
   dryRun: boolean
+  projectId: string | undefined
   ready: readonly UploadCandidate[]
   uploaded: readonly UploadedResult[]
   skipped: readonly UploadIssue[]
@@ -174,10 +186,17 @@ function printUploadResult(result: {
   write(
     `${String(completed.length)} ${prefix}, ${String(result.skipped.length)} skipped, ${String(result.failed.length)} failed`
   )
+
+  if (result.projectId) {
+    write(`project\t${result.projectId}`)
+  }
 }
 
-async function runUpload(
-  command: Extract<ReturnType<typeof parseCliArguments>, { kind: "upload" }>
+async function runProjectCreate(
+  command: Extract<
+    ReturnType<typeof parseCliArguments>,
+    { kind: "project-create" }
+  >
 ): Promise<number> {
   const discovery = await discoverPdfPaths(command.paths, command.recursive)
   const prepared = await mapWithConcurrency(
@@ -193,18 +212,22 @@ async function runUpload(
 
   if (command.dryRun) {
     const result = {
-      command: "upload" as const,
+      authors: [...command.authors],
+      command: "project-create" as const,
+      description: command.description,
       dryRun: true as const,
       ready: selection.candidates,
       uploaded: [],
       skipped: selection.skipped,
+      title: command.title,
       failed,
+      projectId: undefined,
     }
 
     if (command.json) {
       write(JSON.stringify(result, undefined, 2))
     } else {
-      printUploadResult(result)
+      printProjectResult(result)
     }
 
     return failed.length > 0 ? 1 : 0
@@ -234,7 +257,7 @@ async function runUpload(
       skipped.push({
         code: "already-uploaded",
         path: candidate.path,
-        reason: "PDF is already in the library",
+        reason: "PDF is already attached to a project",
       })
     } else {
       pending.push(candidate)
@@ -264,29 +287,85 @@ async function runUpload(
     }
   )
   const uploaded = uploadAttempts.filter(
-    (attempt): attempt is UploadedResult => "id" in attempt
+    (attempt): attempt is UploadedResult => "key" in attempt
   )
   failed.push(
     ...uploadAttempts.filter(
-      (attempt): attempt is UploadIssue => !("id" in attempt)
+      (attempt): attempt is UploadIssue => !("key" in attempt)
     )
   )
+
+  if (skipped.some((issue) => issue.code === "already-uploaded")) {
+    failed.push({
+      code: "project-incomplete",
+      path: command.title,
+      reason: "A project cannot reuse a PDF already attached elsewhere",
+    })
+  }
+
+  let projectId: string | undefined
+
+  if (failed.length === 0 && uploaded.length > 0) {
+    const project = await createProject(configuration, {
+      id: randomUUID(),
+      title: command.title,
+      description: command.description,
+      authors: [...command.authors],
+      files: uploaded.map(({ hash, key, name, size, url }) => ({
+        hash,
+        key,
+        name,
+        size,
+        url,
+      })),
+    })
+    projectId = project.id
+  } else if (uploaded.length > 0) {
+    try {
+      await discardUploads(
+        configuration,
+        uploaded.map(({ hash, key, name, size, url }) => ({
+          hash,
+          key,
+          name,
+          size,
+          url,
+        }))
+      )
+      failed.push(
+        ...uploaded.map((file) => ({
+          code: "rolled-back",
+          path: file.path,
+          reason: "Upload removed because the project was incomplete",
+        }))
+      )
+    } catch (error) {
+      failed.push({
+        code: "cleanup-failed",
+        path: command.title,
+        reason:
+          error instanceof Error ? error.message : "Upload cleanup failed",
+      })
+    }
+  }
+
   const result = {
-    command: "upload" as const,
+    command: "project-create" as const,
     dryRun: false as const,
     ready: [],
-    uploaded,
+    uploaded: projectId ? uploaded : [],
     skipped,
     failed,
+    projectId,
   }
 
   if (command.json) {
     write(JSON.stringify(result, undefined, 2))
   } else {
-    printUploadResult(result)
+    printProjectResult(result)
   }
 
-  return failed.length > 0 ? 1 : 0
+  return projectId ? 0 : 1
 }
 
 async function main(): Promise<number> {
@@ -297,8 +376,8 @@ async function main(): Promise<number> {
     return 0
   }
 
-  if (command.kind === "upload") {
-    return runUpload(command)
+  if (command.kind === "project-create") {
+    return runProjectCreate(command)
   }
 
   if (command.kind === "login") {
@@ -333,15 +412,17 @@ async function main(): Promise<number> {
     return result.storageConfigured ? 0 : 1
   }
 
-  const papers = await listPapers(configuration)
+  const projects = await listProjects(configuration)
 
   if (command.json) {
-    write(JSON.stringify({ command: "list", papers }, undefined, 2))
-  } else if (papers.length === 0) {
-    write("No papers")
+    write(JSON.stringify({ command: "project-list", projects }, undefined, 2))
+  } else if (projects.length === 0) {
+    write("No projects")
   } else {
-    for (const paper of papers) {
-      write(`${paper.id}\t${paper.fileName}\t${paper.size}`)
+    for (const project of projects) {
+      write(
+        `${project.id}\t${project.title}\t${String(project.files.length)} file${project.files.length === 1 ? "" : "s"}`
+      )
     }
   }
 

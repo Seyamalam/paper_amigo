@@ -1,249 +1,77 @@
-# Paper Amigo V1 requirements
+# Paper Amigo requirements
 
-Status: confirmed product requirements. The responsive product shell, stateless
-owner auth, and private browser ingestion are implemented. Durable records, CLI,
-and skill integrations have not started.
+## Product
 
-## Product boundary
+Paper Amigo is a single-owner research-project library. A project is the unit of
+organization and sharing. It contains:
 
-Paper Amigo is a private web library for research-paper PDFs. The owner manages
-the library in a browser. Agents add papers from arbitrary local folders by
-following an agent skill that calls a deterministic CLI.
+- A required title and description.
+- One or more authors.
+- One to ten PDF files.
 
-V1 has one owner library and one environment-configured owner credential. There
-are no separate personal libraries or per-owner records.
+Each author has a required name, designation, and university. ORCID iD and a
+profile URL are optional.
 
-## Technical constraints
+## Storage
 
-- Use the existing Next.js application.
-- Use Better Auth cryptography for an encrypted stateless owner session.
-- Use UploadThing for private PDF storage.
-- Use a small managed key-value store only for share links, view tracking, and
-  critiques.
-- Do not use a relational, document, or authentication database.
-- Use a CLI and agent skill for agent ingestion. Do not build an MCP server.
-- Run all quality checks locally through `bun run ci`.
-
-The key-value provider remains an implementation decision.
+- Do not use an application database.
+- Store PDFs and versioned project JSON manifests in UploadThing.
+- Use `public-read` because the selected free tier does not support private
+  storage.
+- Treat public URLs as unlisted, not private. The product does not display a
+  download action but cannot prevent saving a publicly readable PDF.
+- Preserve original PDF filenames and validate every manifest file reference
+  against UploadThing before creating a project.
+- Calculate a SHA-256 hash before upload and reject duplicate PDF content.
+- Roll back uploaded PDFs when project creation is incomplete.
 
 ## Owner authentication
 
-- Only the server-configured owner email and password are supported.
-- There is no registration, password reset, or stored user account.
-- Better Auth cryptography must provide encrypted stateless sessions.
-- Every library, upload, sharing, tracking, and critique-management route requires
-  an owner session.
-- The sign-in page must show a generic error for invalid credentials.
-- The application must provide sign-out.
-- V1 does not support third-party OAuth, public registration, roles,
-  organizations, or centrally revoking individual browser sessions.
+- Support one server-configured email and password.
+- Do not provide registration, password reset, OAuth, roles, or organizations.
+- Use Better Auth cryptography for encrypted stateless browser sessions.
+- Accept the same credential through HTTP Basic authentication over HTTPS for
+  the CLI.
+- Store CLI passwords in macOS Keychain and never print them.
 
-## Paper library
+## Web application
 
-The owner can:
+- Provide a fast responsive sidebar layout with mobile bottom navigation.
+- Use a minimal black/white interface with light and dark modes.
+- List and search projects by title, description, or author.
+- Create projects with repeatable author fields and multi-PDF upload progress.
+- Open a project and switch between its PDF files.
 
-- View every stored paper in a paginated list or grid.
-- Search by filename.
-- Sort by filename, upload date, and file size.
-- Open a paper in an embedded viewer.
-- Upload one or more PDFs from the browser.
-- Delete a paper after explicit confirmation.
-- See upload progress and per-file failures.
-- See the share links and critiques attached to a paper.
-
-Each paper displays its original filename, size, and upload date. V1 does not
-store custom titles, authors, abstracts, DOI values, tags, collections, notes,
-favorites, or reading status.
-
-## PDF ingestion
-
-- Accept PDF files only.
-- Default to a 64 MB maximum per file unless the storage plan requires a lower
-  limit.
-- Preserve the original filename.
-- Calculate a SHA-256 content hash before upload.
-- Use the content hash to make ingestion idempotent.
-- Skip duplicate content by default and report it as skipped.
-- Upload batches with bounded concurrency.
-- A failed file must not cancel the rest of its batch.
-- Store every PDF with private access.
-- Upload directly to storage through a short-lived upload authorization. Do not
-  proxy the entire PDF through the application server.
-
-## CLI
-
-The command name is `paper-amigo`. It must work from any current directory and
-accept absolute or relative filesystem paths.
+## CLI and skill
 
 Required commands:
 
 ```text
-paper-amigo upload <path...>
-paper-amigo upload <directory> --recursive
-paper-amigo list
-paper-amigo doctor
+paper-amigo login
+paper-amigo logout
+paper-amigo doctor [--json]
+paper-amigo project list [--json]
+paper-amigo project create <path...> --title <title> --description <text> \
+  --author "Name|Designation|University|ORCID|Profile URL"
 ```
 
-CLI requirements:
+Project creation supports repeated `--author`, `--recursive`, `--dry-run`,
+`--json`, and `--concurrency <1-8>`. It accepts relative or absolute files and
+directories from any working directory. The agent skill calls the CLI rather
+than reimplementing storage or authentication.
 
-- Accept files, directories, and several paths in one invocation.
-- Ignore non-PDF files when scanning directories.
-- Support recursive discovery.
-- Support `--dry-run`, `--json`, and configurable concurrency.
-- Print uploaded, skipped, and failed results.
-- Return a nonzero exit code when any requested upload fails.
-- Use stable machine-readable error codes in JSON mode.
-- Read the application URL and owner credentials from macOS Keychain-backed
-  login or environment variables.
-- Never require or expose the UploadThing server token.
-- Never print owner credentials in output or logs.
+## Sharing and critiques
 
-## Agent skill
-
-The agent skill is the only agent-facing integration in V1. It must:
-
-- Check that the `paper-amigo` command is available.
-- Run `paper-amigo doctor` before the first ingestion when configuration is
-  uncertain.
-- Resolve the paths the user placed in scope.
-- Use `--dry-run --json` before a large recursive ingestion.
-- Call the CLI rather than reimplementing uploads or storage requests.
-- Interpret structured CLI results and report uploaded, skipped, and failed
-  papers.
-- Retry only failures marked as retryable.
-- Never read, request, or echo owner credentials.
-- Explain how to install or configure the CLI when `doctor` fails.
-
-The skill contains instructions and recovery guidance. The CLI contains all file
-discovery, hashing, validation, authentication, upload, and retry behavior.
-
-## Machine authentication
-
-- CLI requests use HTTP Basic authentication over HTTPS with the same owner email
-  and password as the web sign-in.
-- `paper-amigo login` saves the password in macOS Keychain. Running it again
-  updates the saved login, and `paper-amigo logout` removes it.
-- The credential grants ingestion and paper-listing access only and never exposes
-  the UploadThing token.
-- Operators rotate it with the owner login password.
-- Individually issued or remotely revoked agent credentials are out of scope for
-  V1.
-
-## Share links
-
-The owner can create several share links for one paper. Each share link has:
-
-- A required recipient label.
-- A high-entropy secret.
-- An optional expiration time.
-- An optional maximum view count.
-- Active or revoked status.
-- Creation, first-view, and most-recent-view timestamps.
-- Total views and estimated unique visitors.
-
-The owner can copy, inspect, revoke, and replace a share link. The server stores
-only a hash of the secret. A share link grants access to one paper and never
-reveals the library.
-
-The recipient label is not verified identity. If a recipient forwards a link,
-subsequent activity remains attributed to that label.
-
-## Recipient paper view
-
+- A project can have multiple labeled secret links.
 - Recipients do not sign in.
-- A valid share link opens a focused paper-viewing page.
-- The application validates the share secret before granting access.
-- The application creates a short-lived signed URL for the private PDF.
-- The PDF is displayed inline.
-- The page has no download button.
-- The response uses inline content disposition where supported.
-- Expired, revoked, and exhausted links show a clear unavailable state.
+- Track total opens and estimated distinct browsers without storing raw IPs.
+- Allow recipients to submit a display name, optional email, critique text, and
+  optional page number.
+- Owners can read, filter, mark, delete, and export critiques.
 
-Once a browser can render a PDF, the application cannot guarantee that the
-recipient will not save, print, capture, or copy it. "No downloads" means the
-product does not offer a download action. It is not digital-rights management.
+Share-link persistence remains unimplemented until a non-database durable store
+is selected.
 
-## View tracking
+## Local quality gate
 
-- Record a view only after a valid share page loads and requests paper access.
-- Avoid counting known crawlers, unfurlers, and failed requests.
-- Count every successful view for the total.
-- Assign a privacy-preserving browser identifier for estimated unique visitors.
-- Do not store raw IP addresses.
-- Track first and most recent view times per link.
-- Present distinct-browser counts as estimates, never as verified people.
-- The owner can see tracking data. Recipients cannot.
-
-## Critiques
-
-Each recipient page contains a critique form with:
-
-- Required display name.
-- Optional email address.
-- Required critique text.
-- Optional PDF page number.
-- Clear submission success and failure states.
-
-Critiques are visible only to the owner. Recipients cannot see their own previous
-submissions or another recipient's submissions.
-
-The owner can:
-
-- Read critiques from the relevant paper.
-- Filter critiques by share link and recipient label.
-- Mark critiques as read or unread.
-- Delete critiques.
-- Export critiques as JSON or Markdown.
-
-The form must enforce input limits, validate on the server, reject HTML, rate
-limit submissions, and use a honeypot or equivalent low-friction spam check.
-
-## Durable key-value records
-
-The managed key-value store holds only:
-
-- Share-link hashes, paper references, recipient labels, limits, and status.
-- Per-link aggregate view counts and timestamps.
-- Privacy-preserving visitor identifiers used for unique estimates.
-- Critiques and their read state.
-
-PDF bytes remain in UploadThing. The owner credential remains in server environment
-configuration, and browser sessions remain stateless. Share secrets must never be
-stored in plaintext.
-
-## Security and privacy
-
-- Keep owner-auth, UploadThing, key-value, and ingestion secrets on the server.
-- Use secure, HTTP-only, same-site cookies where applicable.
-- Rate limit share-link validation, ingestion, and critique submission.
-- Do not include share secrets in analytics events or application logs.
-- Use short-lived signed PDF URLs.
-- A revoked share link must stop producing signed PDF URLs immediately.
-- Validate all API inputs and outputs at runtime.
-- Provide a documented retention and deletion policy before production use.
-
-## Local acceptance gate
-
-Every implementation change must pass:
-
-```bash
-bun install --frozen-lockfile
-bun run ci
-```
-
-The gate includes formatting, Oxlint, typed ESLint, Next.js route generation,
-strict TypeScript, unit tests, a production dependency audit, and a production
-build.
-
-## V1 non-goals
-
-- MCP server.
-- Public paper pages.
-- Recipient accounts or verified recipient identity.
-- Download prevention through DRM.
-- Full-text search or OCR.
-- Citation extraction.
-- Custom paper metadata.
-- Public comment threads or recipient-to-recipient discussion.
-- Multiple isolated owner libraries.
-- Individually managed agent credentials.
+Run `bun run ci`. GitHub Actions are intentionally not used.

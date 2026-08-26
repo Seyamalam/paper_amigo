@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { maxPdfBatchSize, maxPdfBytes } from "@/lib/paper-upload"
+import { projectSchema } from "@/lib/projects"
 
 export const ingestionErrorSchema = z.object({
   error: z.string(),
@@ -15,15 +16,6 @@ export const ingestionDoctorResponseSchema = z.object({
   }),
 })
 
-export const ingestionPaperSchema = z.object({
-  id: z.string().min(1),
-  fileName: z.string().min(1),
-  size: z.string().min(1),
-  uploadedAt: z.string().min(1),
-  shareCount: z.number().int().nonnegative(),
-  critiqueCount: z.number().int().nonnegative(),
-})
-
-export const ingestionPapersResponseSchema = z.object({
-  papers: z.array(ingestionPaperSchema),
+export const ingestionProjectsResponseSchema = z.object({
+  projects: z.array(projectSchema),
 })

@@ -5,10 +5,10 @@ import type { Route } from "next"
 import { usePathname } from "next/navigation"
 import {
   Archive,
+  FilePlus2,
   MessageSquareText,
   Settings2,
   Share2,
-  Upload,
   type LucideIcon,
 } from "lucide-react"
 
@@ -24,7 +24,7 @@ const primaryItems: readonly NavItem[] = [
   { href: "/", label: "Library", icon: Archive },
   { href: "/sharing", label: "Share links", icon: Share2 },
   { href: "/critiques", label: "Critiques", icon: MessageSquareText },
-  { href: "/upload", label: "Upload", icon: Upload },
+  { href: "/upload", label: "Create", icon: FilePlus2 },
 ]
 
 const settingsItem: NavItem = {
@@ -35,7 +35,11 @@ const settingsItem: NavItem = {
 
 function isCurrentPath(pathname: string, href: Route): boolean {
   if (href === "/") {
-    return pathname === "/" || pathname.startsWith("/papers/")
+    return (
+      pathname === "/" ||
+      pathname.startsWith("/projects/") ||
+      pathname.startsWith("/papers/")
+    )
   }
 
   return pathname.startsWith(href)

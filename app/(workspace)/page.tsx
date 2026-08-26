@@ -1,8 +1,8 @@
-import { PaperLibrary } from "@/components/paper-amigo/paper-library"
-import { getPaperLibrary } from "@/lib/paper-storage"
+import { ProjectLibrary } from "@/components/paper-amigo/project-library"
+import { getProjectLibrary } from "@/lib/project-storage"
 
 export default async function Page() {
-  const library = await getPaperLibrary()
+  const library = await getProjectLibrary()
 
-  return <PaperLibrary papers={library.papers} />
+  return <ProjectLibrary projects={library.projects} />
 }

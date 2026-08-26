@@ -5,8 +5,8 @@ import type { OwnerAccess } from "@/lib/owner-access"
 import { getOwnerRequestAccess } from "@/lib/owner-request-access"
 import {
   findDuplicatePaperHashes,
-  isPaperStorageConfigured,
-} from "@/lib/paper-storage"
+  isProjectStorageConfigured,
+} from "@/lib/project-storage"
 import { paperUploadInputSchema } from "@/lib/paper-upload"
 
 const uploadThing = createUploadthing()
@@ -42,7 +42,7 @@ export const paperFileRouter = {
         rejectUpload("FORBIDDEN", "Sign in required")
       }
 
-      if (!isPaperStorageConfigured()) {
+      if (!isProjectStorageConfigured()) {
         rejectUpload("MISSING_ENV", "UploadThing is not configured")
       }
 
@@ -81,8 +81,11 @@ export const paperFileRouter = {
       }
     })
     .onUploadComplete(({ file }) => ({
-      id: file.customId ?? file.key,
+      hash: file.customId ?? file.key,
+      key: file.key,
       name: file.name,
+      size: file.size,
+      url: file.ufsUrl,
     })),
 } satisfies FileRouter
 

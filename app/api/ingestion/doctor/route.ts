@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 
 import { authenticateBasicOwner, basicAuthHeaders } from "@/lib/owner-api-auth"
 import { maxPdfBatchSize, maxPdfBytes } from "@/lib/paper-upload"
-import { isPaperStorageConfigured } from "@/lib/paper-storage"
+import { isProjectStorageConfigured } from "@/lib/project-storage"
 
 export function GET(request: NextRequest): NextResponse {
   if (!authenticateBasicOwner(request.headers.get("authorization"))) {
@@ -15,7 +15,7 @@ export function GET(request: NextRequest): NextResponse {
   return NextResponse.json(
     {
       ok: true,
-      storageConfigured: isPaperStorageConfigured(),
+      storageConfigured: isProjectStorageConfigured(),
       limits: { maxBatchSize: maxPdfBatchSize, maxPdfBytes },
     },
     { headers: { "Cache-Control": "no-store" } }

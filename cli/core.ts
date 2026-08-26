@@ -1,6 +1,8 @@
 import { lstat, readdir } from "node:fs/promises"
 import { resolve } from "node:path"
 
+import type { ProjectAuthor } from "../lib/projects"
+
 export type CliCommand =
   | Readonly<{ kind: "doctor"; json: boolean }>
   | Readonly<{ kind: "help" }>
@@ -8,12 +10,15 @@ export type CliCommand =
   | Readonly<{ kind: "list"; json: boolean }>
   | Readonly<{ kind: "logout" }>
   | Readonly<{
-      kind: "upload"
+      kind: "project-create"
+      authors: readonly ProjectAuthor[]
       concurrency: number
+      description: string
       dryRun: boolean
       json: boolean
       paths: readonly string[]
       recursive: boolean
+      title: string
     }>
 
 export type DiscoveryFailure = Readonly<{
@@ -81,12 +86,51 @@ function parseInteractiveCommand(
   throw new CliUsageError(`Unknown option: ${arguments_[0] ?? ""}`)
 }
 
-function parseUploadCommand(arguments_: readonly string[]): CliCommand {
+function optionValue(option: string, value: string | undefined): string {
+  if (!value || value.startsWith("-")) {
+    throw new CliUsageError(`${option} needs a value`)
+  }
+
+  return value
+}
+
+export function parseCliAuthor(value: string): ProjectAuthor {
+  const [name, designation, university, orcid, profileUrl, ...extra] = value
+    .split("|")
+    .map((part) => part.trim())
+
+  if (!name || !designation || !university || extra.length > 0) {
+    throw new CliUsageError(
+      '--author must be "Name|Designation|University|ORCID|Profile URL"'
+    )
+  }
+
+  const author: ProjectAuthor = {
+    name,
+    designation,
+    university,
+  }
+
+  if (orcid) {
+    author.orcid = orcid
+  }
+
+  if (profileUrl) {
+    author.profileUrl = profileUrl
+  }
+
+  return author
+}
+
+function parseProjectCreateCommand(arguments_: readonly string[]): CliCommand {
   const paths: string[] = []
+  const authors: ProjectAuthor[] = []
   let concurrency = 3
+  let description: string | undefined
   let dryRun = false
   let json = false
   let recursive = false
+  let title: string | undefined
 
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
@@ -104,6 +148,26 @@ function parseUploadCommand(arguments_: readonly string[]): CliCommand {
       index += 1
     } else if (argument?.startsWith("--concurrency=")) {
       concurrency = parseConcurrency(argument.slice("--concurrency=".length))
+    } else if (argument === "--title") {
+      title = optionValue("--title", arguments_[index + 1])
+      index += 1
+    } else if (argument?.startsWith("--title=")) {
+      title = optionValue("--title", argument.slice("--title=".length))
+    } else if (argument === "--description") {
+      description = optionValue("--description", arguments_[index + 1])
+      index += 1
+    } else if (argument?.startsWith("--description=")) {
+      description = optionValue(
+        "--description",
+        argument.slice("--description=".length)
+      )
+    } else if (argument === "--author") {
+      authors.push(
+        parseCliAuthor(optionValue("--author", arguments_[index + 1]))
+      )
+      index += 1
+    } else if (argument?.startsWith("--author=")) {
+      authors.push(parseCliAuthor(argument.slice("--author=".length)))
     } else if (argument?.startsWith("-")) {
       throw new CliUsageError(`Unknown option: ${argument}`)
     } else if (argument) {
@@ -112,10 +176,34 @@ function parseUploadCommand(arguments_: readonly string[]): CliCommand {
   }
 
   if (paths.length === 0) {
-    throw new CliUsageError("upload needs at least one file or directory")
+    throw new CliUsageError(
+      "project create needs at least one file or directory"
+    )
   }
 
-  return { kind: "upload", concurrency, dryRun, json, paths, recursive }
+  if (!title?.trim()) {
+    throw new CliUsageError("project create needs --title")
+  }
+
+  if (!description?.trim()) {
+    throw new CliUsageError("project create needs --description")
+  }
+
+  if (authors.length === 0) {
+    throw new CliUsageError("project create needs at least one --author")
+  }
+
+  return {
+    kind: "project-create",
+    authors,
+    concurrency,
+    description,
+    dryRun,
+    json,
+    paths,
+    recursive,
+    title,
+  }
 }
 
 export function parseCliArguments(arguments_: readonly string[]): CliCommand {
@@ -133,8 +221,26 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
     return parseInteractiveCommand(command, rest)
   }
 
+  if (command === "project") {
+    const [subcommand, ...projectArguments] = rest
+
+    if (subcommand === "create") {
+      return parseProjectCreateCommand(projectArguments)
+    }
+
+    if (subcommand === "list") {
+      return parseSimpleCommand("list", projectArguments)
+    }
+
+    throw new CliUsageError(
+      subcommand
+        ? `Unknown project command: ${subcommand}`
+        : "project needs create or list"
+    )
+  }
+
   if (command === "upload") {
-    return parseUploadCommand(rest)
+    return parseProjectCreateCommand(rest)
   }
 
   throw new CliUsageError(`Unknown command: ${command}`)

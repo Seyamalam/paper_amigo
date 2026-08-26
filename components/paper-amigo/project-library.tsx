@@ -1,42 +1,49 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useDeferredValue, useMemo, useState } from "react"
 import Link from "next/link"
 import { ArrowDownUp, Plus, Search } from "lucide-react"
 
 import { PageHeading } from "@/components/paper-amigo/page-heading"
-import { PaperCard } from "@/components/paper-amigo/paper-card"
+import { ProjectCard } from "@/components/paper-amigo/project-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { Paper } from "@/lib/papers"
+import type { Project } from "@/lib/projects"
 
-export function PaperLibrary({
-  papers,
-}: Readonly<{
-  papers: readonly Paper[]
-}>) {
+export function ProjectLibrary({
+  projects,
+}: Readonly<{ projects: readonly Project[] }>) {
   const [query, setQuery] = useState("")
+  const deferredQuery = useDeferredValue(query)
   const [oldestFirst, setOldestFirst] = useState(false)
-  const visiblePapers = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    const matching = papers.filter((paper) =>
-      paper.fileName.toLowerCase().includes(normalizedQuery)
-    )
+  const visibleProjects = useMemo(() => {
+    const normalizedQuery = deferredQuery.trim().toLowerCase()
+    const matching = projects.filter((project) => {
+      const searchable = [
+        project.title,
+        project.description,
+        ...project.authors.map((author) => author.name),
+      ]
+        .join(" ")
+        .toLowerCase()
+
+      return searchable.includes(normalizedQuery)
+    })
 
     return oldestFirst ? matching.toReversed() : matching
-  }, [oldestFirst, papers, query])
-  const paperCount = papers.length
+  }, [deferredQuery, oldestFirst, projects])
+  const projectCount = projects.length
 
   return (
     <div className="space-y-7">
       <PageHeading
-        eyebrow={`${String(paperCount)} ${paperCount === 1 ? "paper" : "papers"}`}
-        title="Papers"
+        eyebrow={`${String(projectCount)} ${projectCount === 1 ? "project" : "projects"}`}
+        title="Projects"
         action={
           <Button asChild className="h-10 gap-2 px-4">
             <Link href="/upload">
               <Plus aria-hidden="true" />
-              Upload
+              Create
             </Link>
           </Button>
         }
@@ -46,12 +53,10 @@ export function PaperLibrary({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 id="library-heading" className="text-sm font-semibold">
-              All papers
+              All projects
             </h2>
             <p className="mt-1 font-mono text-[10px] tracking-wide text-muted-foreground uppercase">
-              {oldestFirst
-                ? "Sorted by oldest upload"
-                : "Sorted by newest upload"}
+              {oldestFirst ? "Oldest first" : "Newest first"}
             </p>
           </div>
           <div className="flex gap-2">
@@ -69,8 +74,8 @@ export function PaperLibrary({
                 <Input
                   name="q"
                   type="search"
-                  aria-label="Search papers"
-                  placeholder="Search filenames"
+                  aria-label="Search projects"
+                  placeholder="Search projects"
                   value={query}
                   className="h-9 rounded-none bg-card pl-9 text-xs"
                   onChange={(event) => {
@@ -95,23 +100,23 @@ export function PaperLibrary({
           </div>
         </div>
 
-        {visiblePapers.length === 0 ? (
+        {visibleProjects.length === 0 ? (
           <div className="grid min-h-48 place-items-center border border-dashed bg-muted/20 p-8 text-center">
             <div>
               <p className="text-sm font-medium">
-                {papers.length === 0 ? "No papers" : "No matches"}
+                {projects.length === 0 ? "No projects" : "No matches"}
               </p>
-              {papers.length === 0 ? (
+              {projects.length === 0 ? (
                 <Button asChild variant="outline" className="mt-4">
-                  <Link href="/upload">Upload PDF</Link>
+                  <Link href="/upload">Create project</Link>
                 </Button>
               ) : null}
             </div>
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {visiblePapers.map((paper) => (
-              <PaperCard key={paper.id} paper={paper} />
+            {visibleProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
             ))}
           </div>
         )}

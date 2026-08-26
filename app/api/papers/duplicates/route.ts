@@ -3,8 +3,8 @@ import { NextResponse, type NextRequest } from "next/server"
 import { getOwnerRequestAccess } from "@/lib/owner-request-access"
 import {
   findDuplicatePaperHashes,
-  isPaperStorageConfigured,
-} from "@/lib/paper-storage"
+  isProjectStorageConfigured,
+} from "@/lib/project-storage"
 import { paperUploadInputSchema } from "@/lib/paper-upload"
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })
   }
 
-  if (!isPaperStorageConfigured()) {
+  if (!isProjectStorageConfigured()) {
     return NextResponse.json(
       { error: "UploadThing is not configured" },
       { status: 503 }

@@ -1,40 +1,54 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest"
 
-import { PaperLibrary } from "@/components/paper-amigo/paper-library"
-import type { Paper } from "@/lib/papers"
+import { ProjectLibrary } from "@/components/paper-amigo/project-library"
+import type { Project } from "@/lib/projects"
 
-const paper: Paper = {
-  id: "hash",
-  fileName: "paper.pdf",
-  size: "1 MB",
-  uploadedAt: "26 Aug 2026",
-  shareCount: 0,
-  critiqueCount: 0,
+const project: Project = {
+  schemaVersion: 1,
+  id: "0f5a034d-c19a-4b77-8605-c1f3b30ad3c2",
+  title: "Climate study",
+  description: "Longitudinal results",
+  authors: [
+    {
+      name: "Seyam",
+      designation: "Researcher",
+      university: "Example University",
+    },
+  ],
+  files: [
+    {
+      key: "file-key",
+      hash: "a".repeat(64),
+      name: "paper.pdf",
+      size: 1_024,
+      uploadedAt: "2026-08-26T00:00:00.000Z",
+      url: "https://example.com/paper.pdf",
+    },
+  ],
+  createdAt: "2026-08-26T00:00:00.000Z",
+  updatedAt: "2026-08-26T00:00:00.000Z",
 }
 
 afterEach(cleanup)
 
-describe("Page", () => {
-  it("renders the research library", () => {
-    render(<PaperLibrary papers={[paper]} />)
+describe("ProjectLibrary", () => {
+  it("renders the project library", () => {
+    render(<ProjectLibrary projects={[project]} />)
 
     expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "Papers",
-      })
+      screen.getByRole("heading", { level: 1, name: "Projects" })
     ).toBeDefined()
     expect(
-      screen.getByRole("searchbox", { name: "Search papers" })
+      screen.getByRole("searchbox", { name: "Search projects" })
     ).toBeDefined()
     expect(screen.getAllByRole("article")).toHaveLength(1)
   })
 
-  it("renders an empty library without seeded records", () => {
-    render(<PaperLibrary papers={[]} />)
+  it("renders an empty library", () => {
+    render(<ProjectLibrary projects={[]} />)
 
-    expect(screen.getByText("No papers")).toBeDefined()
+    expect(screen.getByText("No projects")).toBeDefined()
     expect(screen.queryAllByRole("article")).toHaveLength(0)
   })
 })

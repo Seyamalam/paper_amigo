@@ -9,7 +9,7 @@ import {
 import { PageHeading } from "@/components/paper-amigo/page-heading"
 import { Badge } from "@/components/ui/badge"
 import { getAuthEnvironmentState } from "@/lib/auth-environment"
-import { isPaperStorageConfigured } from "@/lib/paper-storage"
+import { isProjectStorageConfigured } from "@/lib/project-storage"
 
 type ProviderStatus = "Connected" | "Demo" | "Not connected"
 
@@ -45,7 +45,7 @@ export default function SettingsPage() {
     {
       name: "UploadThing",
       purpose: "Private PDF bytes and short-lived signed access",
-      status: isPaperStorageConfigured() ? "Connected" : "Not connected",
+      status: isProjectStorageConfigured() ? "Connected" : "Not connected",
       variables: ["UPLOADTHING_TOKEN"],
     },
     {

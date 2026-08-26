@@ -1,16 +1,27 @@
 # Paper Amigo
 
-Paper Amigo is a private research-paper library. It lets an owner collect papers,
-share individual papers with labeled recipients, and receive private critiques.
+Paper Amigo is a research-project library. It lets an owner group PDFs and
+researcher details into projects, share projects with labeled recipients, and
+receive private critiques.
 
 ## Language
 
-**Paper**:
-A research PDF held in the library.
-_Avoid_: Document, file, item
+**Project**:
+A titled research work with a description, one or more authors, and one or more
+PDF files.
+_Avoid_: Paper, item, folder
+
+**Project file**:
+A PDF attached to exactly one project.
+_Avoid_: Paper, document, attachment
+
+**Author**:
+A project contributor identified by name, designation, and university, with an
+optional ORCID iD and profile URL.
+_Avoid_: User, owner, recipient
 
 **Library**:
-The owner's complete collection of papers.
+The owner's complete collection of projects.
 _Avoid_: Repository, archive, folder
 
 **Owner**:
@@ -19,11 +30,12 @@ the library, sharing, and critiques.
 _Avoid_: Admin, user
 
 **Ingestion**:
-The act of adding one or more papers from a local filesystem to the library.
+The act of creating a project and attaching one or more project files from a
+local filesystem.
 _Avoid_: Import, sync
 
 **Share link**:
-A revocable secret link that grants recipient access to one paper.
+A revocable secret link that grants recipient access to one project.
 _Avoid_: Public link, download link
 
 **Recipient label**:
@@ -36,7 +48,7 @@ A person who possesses a valid share link and can view its paper without signing
 _Avoid_: Guest, anonymous user
 
 **View**:
-A successful recipient access to a paper through a share link.
+A successful recipient access to a project through a share link.
 _Avoid_: Click, impression
 
 **Estimated unique visitor**:
@@ -45,5 +57,5 @@ identifier. It is not proof of a person's identity.
 _Avoid_: Unique person, verified viewer
 
 **Critique**:
-Private feedback that a recipient submits to the owner about a shared paper.
+Private feedback that a recipient submits to the owner about a shared project.
 _Avoid_: Public comment, review

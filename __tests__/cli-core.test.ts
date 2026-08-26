@@ -4,7 +4,12 @@ import { join } from "node:path"
 
 import { afterEach, describe, expect, it } from "vitest"
 
-import { CliUsageError, discoverPdfPaths, parseCliArguments } from "@/cli/core"
+import {
+  CliUsageError,
+  discoverPdfPaths,
+  parseCliArguments,
+  parseCliAuthor,
+} from "@/cli/core"
 
 const temporaryDirectories: string[] = []
 
@@ -20,30 +25,74 @@ describe("parseCliArguments", () => {
     expect(parseCliArguments(["logout"])).toEqual({ kind: "logout" })
   })
 
-  it("parses recursive uploads", () => {
+  it("parses recursive project creation", () => {
     expect(
       parseCliArguments([
-        "upload",
+        "project",
+        "create",
         "papers",
+        "--title",
+        "Climate study",
+        "--description",
+        "A longitudinal study",
+        "--author",
+        "Seyam|Researcher|Example University|0000-0002-1825-0097|https://example.edu/seyam",
         "--recursive",
         "--dry-run",
         "--json",
         "--concurrency=4",
       ])
     ).toEqual({
-      kind: "upload",
+      kind: "project-create",
+      authors: [
+        {
+          name: "Seyam",
+          designation: "Researcher",
+          university: "Example University",
+          orcid: "0000-0002-1825-0097",
+          profileUrl: "https://example.edu/seyam",
+        },
+      ],
       concurrency: 4,
+      description: "A longitudinal study",
       dryRun: true,
       json: true,
       paths: ["papers"],
       recursive: true,
+      title: "Climate study",
     })
   })
 
   it("rejects invalid concurrency", () => {
     expect(() =>
-      parseCliArguments(["upload", "paper.pdf", "--concurrency", "9"])
+      parseCliArguments([
+        "project",
+        "create",
+        "paper.pdf",
+        "--title",
+        "Title",
+        "--description",
+        "Description",
+        "--author",
+        "Name|Role|University",
+        "--concurrency",
+        "9",
+      ])
     ).toThrow(CliUsageError)
+  })
+
+  it("parses authors without optional identifiers", () => {
+    expect(parseCliAuthor("Name|Professor|University")).toEqual({
+      name: "Name",
+      designation: "Professor",
+      university: "University",
+    })
+  })
+
+  it("requires project metadata", () => {
+    expect(() => parseCliArguments(["project", "create", "paper.pdf"])).toThrow(
+      "project create needs --title"
+    )
   })
 })
 
