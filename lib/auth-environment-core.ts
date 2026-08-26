@@ -45,7 +45,7 @@ function configuredState(environment: AuthEnvironment): AuthEnvironmentState {
     variables.push("PAPER_AMIGO_OWNER_EMAIL")
   }
 
-  if (ownerPassword.length < 12) {
+  if (ownerPassword.length === 0) {
     variables.push("PAPER_AMIGO_OWNER_PASSWORD")
   }
 

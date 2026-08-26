@@ -38,12 +38,12 @@ describe("resolveAuthEnvironment", () => {
     })
   })
 
-  it("reports weak or invalid settings", () => {
+  it("reports missing or invalid settings", () => {
     expect(
       resolveAuthEnvironment({
         betterAuthSecret: "short",
         ownerEmail: "not-an-email",
-        ownerPassword: "too-short",
+        ownerPassword: "",
       })
     ).toEqual({
       kind: "invalid",
@@ -52,6 +52,18 @@ describe("resolveAuthEnvironment", () => {
         "PAPER_AMIGO_OWNER_EMAIL",
         "PAPER_AMIGO_OWNER_PASSWORD",
       ],
+    })
+  })
+
+  it("accepts any non-empty configured password", () => {
+    expect(
+      resolveAuthEnvironment({
+        ...configuredEnvironment,
+        ownerPassword: "short",
+      })
+    ).toMatchObject({
+      kind: "configured",
+      configuration: { ownerPassword: "short" },
     })
   })
 

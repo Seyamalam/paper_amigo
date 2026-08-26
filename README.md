@@ -35,8 +35,9 @@ PAPER_AMIGO_INGESTION_TOKEN
 
 - Generate `BETTER_AUTH_SECRET` with `openssl rand -base64 32`.
 - Set `PAPER_AMIGO_OWNER_EMAIL` to the only email allowed to sign in.
-- Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password with at least 12
-  characters. A password-manager-generated value is recommended.
+- Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password. The app accepts any
+  non-empty value, but a password-manager-generated value with at least 12
+  characters is recommended.
 - Create an UploadThing app, enable ACL overrides, and set its default ACL to
   private. Copy its v7 token into `UPLOADTHING_TOKEN`.
 - Keep all of these server-only. Do not add a `NEXT_PUBLIC_` prefix.
