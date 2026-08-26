@@ -323,7 +323,11 @@ export async function uploadPdf(
   })
 
   if (!storageResponse.ok) {
-    throw new CliRequestError("Storage upload failed", "storage-upload-failed")
+    const storageError = await storageResponse.text().catch(() => "")
+    throw new CliRequestError(
+      `Storage upload failed (${String(storageResponse.status)} ${storageResponse.statusText})${storageError ? `: ${storageError}` : ""}`,
+      "storage-upload-failed"
+    )
   }
 
   const uploaded = storageUploadResponseSchema.safeParse(

@@ -28,7 +28,7 @@ function rejectUpload(
 export const paperFileRouter = {
   paperPdf: uploadThing({
     pdf: {
-      acl: "private",
+      acl: "public-read",
       contentDisposition: "inline",
       maxFileCount: 10,
       maxFileSize: "64MB",
