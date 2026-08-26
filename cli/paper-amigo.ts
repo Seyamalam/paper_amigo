@@ -9,9 +9,9 @@ import {
   doctor,
   findDuplicates,
   listPapers,
-  readCliConfiguration,
   uploadPdf,
 } from "./client"
+import { clearLogin, loadCliConfiguration, saveLogin } from "./credentials"
 import {
   CliUsageError,
   discoverPdfPaths,
@@ -24,15 +24,14 @@ import { getPdfValidationError, maxPdfBatchSize } from "../lib/paper-upload"
 const helpText = `paper-amigo
 
 Usage:
+  paper-amigo login
+  paper-amigo logout
   paper-amigo doctor [--json]
   paper-amigo list [--json]
   paper-amigo upload <path...> [--recursive] [--dry-run] [--json]
                      [--concurrency <1-8>]
 
-Environment:
-  PAPER_AMIGO_URL
-  PAPER_AMIGO_OWNER_EMAIL
-  PAPER_AMIGO_OWNER_PASSWORD
+Run paper-amigo login again to update the saved email or password.
 `
 
 type UploadCandidate = Readonly<{
@@ -211,7 +210,7 @@ async function runUpload(
     return failed.length > 0 ? 1 : 0
   }
 
-  const configuration = readCliConfiguration(process.env)
+  const configuration = await loadCliConfiguration(process.env)
   const duplicateHashes = new Set<string>()
 
   const duplicateBatches = await Promise.all(
@@ -302,7 +301,24 @@ async function main(): Promise<number> {
     return runUpload(command)
   }
 
-  const configuration = readCliConfiguration(process.env)
+  if (command.kind === "login") {
+    const login = await saveLogin(process.env)
+    write(`Logged in as ${login.email}`)
+
+    if (!login.storageConfigured) {
+      write("Storage is not configured")
+    }
+
+    return 0
+  }
+
+  if (command.kind === "logout") {
+    await clearLogin(process.env)
+    write("Saved login removed")
+    return 0
+  }
+
+  const configuration = await loadCliConfiguration(process.env)
 
   if (command.kind === "doctor") {
     const result = await doctor(configuration)

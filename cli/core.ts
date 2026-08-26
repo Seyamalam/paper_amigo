@@ -4,7 +4,9 @@ import { resolve } from "node:path"
 export type CliCommand =
   | Readonly<{ kind: "doctor"; json: boolean }>
   | Readonly<{ kind: "help" }>
+  | Readonly<{ kind: "login" }>
   | Readonly<{ kind: "list"; json: boolean }>
+  | Readonly<{ kind: "logout" }>
   | Readonly<{
       kind: "upload"
       concurrency: number
@@ -61,6 +63,24 @@ function parseSimpleCommand(
   return { kind, json }
 }
 
+function parseInteractiveCommand(
+  kind: "login" | "logout",
+  arguments_: readonly string[]
+): CliCommand {
+  if (arguments_.length === 0) {
+    return { kind }
+  }
+
+  if (
+    arguments_.length === 1 &&
+    ["--help", "-h"].includes(arguments_[0] ?? "")
+  ) {
+    return { kind: "help" }
+  }
+
+  throw new CliUsageError(`Unknown option: ${arguments_[0] ?? ""}`)
+}
+
 function parseUploadCommand(arguments_: readonly string[]): CliCommand {
   const paths: string[] = []
   let concurrency = 3
@@ -107,6 +127,10 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
 
   if (command === "doctor" || command === "list") {
     return parseSimpleCommand(command, rest)
+  }
+
+  if (command === "login" || command === "logout") {
+    return parseInteractiveCommand(command, rest)
   }
 
   if (command === "upload") {

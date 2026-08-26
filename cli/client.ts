@@ -26,6 +26,16 @@ const storageUploadResponseSchema = z.object({
   }),
 })
 
+export const defaultPaperAmigoUrl = "https://paper-amigo.vercel.app"
+
+export type StoredCliCredentials = Readonly<{
+  appUrl: string
+  email: string
+  password: string
+}>
+
+export type CliEnvironment = Readonly<Record<string, string | undefined>>
+
 export type CliConfiguration = Readonly<{
   appUrl: URL
   authorization: string
@@ -53,16 +63,36 @@ function isLocalHost(hostname: string): boolean {
   )
 }
 
-export function readCliConfiguration(
-  environment: NodeJS.ProcessEnv
-): CliConfiguration {
-  const rawUrl = environment["PAPER_AMIGO_URL"]?.trim()
-  const email = environment["PAPER_AMIGO_OWNER_EMAIL"]?.trim()
-  const password = environment["PAPER_AMIGO_OWNER_PASSWORD"]
+function nonEmpty(value: string | undefined): string | undefined {
+  const cleaned = value?.trim()
 
-  if (!rawUrl) {
-    throw new CliRequestError("PAPER_AMIGO_URL is required", "missing-url")
+  if (!cleaned) {
+    return undefined
   }
+
+  return cleaned
+}
+
+export function readCliConfiguration(
+  environment: CliEnvironment,
+  storedCredentials?: StoredCliCredentials
+): CliConfiguration {
+  const rawUrl =
+    nonEmpty(environment["PAPER_AMIGO_URL"]) ??
+    storedCredentials?.appUrl ??
+    defaultPaperAmigoUrl
+  const environmentEmail = nonEmpty(environment["PAPER_AMIGO_OWNER_EMAIL"])
+  const environmentPassword = environment["PAPER_AMIGO_OWNER_PASSWORD"]
+  const hasEnvironmentEmail = Boolean(environmentEmail)
+  const hasEnvironmentPassword = Boolean(environmentPassword)
+  const useEnvironmentCredentials =
+    hasEnvironmentEmail && hasEnvironmentPassword
+  const email = useEnvironmentCredentials
+    ? environmentEmail
+    : storedCredentials?.email
+  const password = useEnvironmentCredentials
+    ? environmentPassword
+    : storedCredentials?.password
 
   let appUrl: URL
 
@@ -88,7 +118,7 @@ export function readCliConfiguration(
 
   if (!email || password === undefined || password.length === 0) {
     throw new CliRequestError(
-      "PAPER_AMIGO_OWNER_EMAIL and PAPER_AMIGO_OWNER_PASSWORD are required",
+      "No saved owner login. Run paper-amigo login",
       "missing-credentials"
     )
   }

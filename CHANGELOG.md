@@ -10,6 +10,7 @@ This file records notable changes to Paper Amigo. Releases follow
 
 - Add an owner-authenticated CLI for diagnostics, listing, recursive PDF
   discovery, duplicate detection, and direct private uploads.
+- Add macOS Keychain-backed CLI login, update, and logout commands.
 
 ### Changed
 

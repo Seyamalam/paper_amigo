@@ -93,7 +93,8 @@ CLI requirements:
 - Print uploaded, skipped, and failed results.
 - Return a nonzero exit code when any requested upload fails.
 - Use stable machine-readable error codes in JSON mode.
-- Read the application URL and owner credentials from environment variables.
+- Read the application URL and owner credentials from macOS Keychain-backed
+  login or environment variables.
 - Never require or expose the UploadThing server token.
 - Never print owner credentials in output or logs.
 
@@ -120,6 +121,8 @@ discovery, hashing, validation, authentication, upload, and retry behavior.
 
 - CLI requests use HTTP Basic authentication over HTTPS with the same owner email
   and password as the web sign-in.
+- `paper-amigo login` saves the password in macOS Keychain. Running it again
+  updates the saved login, and `paper-amigo logout` removes it.
 - The credential grants ingestion and paper-listing access only and never exposes
   the UploadThing token.
 - Operators rotate it with the owner login password.

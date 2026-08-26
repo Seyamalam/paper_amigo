@@ -15,6 +15,11 @@ afterEach(async () => {
 })
 
 describe("parseCliArguments", () => {
+  it("parses saved-login commands", () => {
+    expect(parseCliArguments(["login"])).toEqual({ kind: "login" })
+    expect(parseCliArguments(["logout"])).toEqual({ kind: "logout" })
+  })
+
   it("parses recursive uploads", () => {
     expect(
       parseCliArguments([

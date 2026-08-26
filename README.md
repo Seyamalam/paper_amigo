@@ -57,28 +57,38 @@ three workers and report each file separately.
 
 ## CLI
 
-The CLI uses the same owner email and password as the web app. It requests a
-short-lived upload URL from Paper Amigo, then sends each PDF directly to private
-UploadThing storage.
+The CLI uses the same owner email and password as the web app. On macOS,
+`paper-amigo login` stores the password in Keychain and keeps the email in
+`~/.config/paper-amigo/config.json`. Run `login` again to replace either value.
+The production app URL is the default.
 
 Run it from this checkout:
 
 ```bash
-export PAPER_AMIGO_URL=https://paper-amigo.vercel.app
-export PAPER_AMIGO_OWNER_EMAIL=owner@example.com
-export PAPER_AMIGO_OWNER_PASSWORD='your-owner-password'
-
+bun run cli login
 bun run cli doctor
-bun run cli list
-bun run cli upload ./paper.pdf
-bun run cli upload ./research --recursive --concurrency 3
+bun run cli upload ./research --recursive
 ```
 
 Install the `paper-amigo` command from this checkout with `bun link`:
 
 ```bash
 bun link
+paper-amigo login
 paper-amigo doctor
+```
+
+The email prompt reuses the saved address when one exists. The password prompt
+comes from macOS Keychain and does not echo the password. Use
+`paper-amigo logout` to remove the saved email and Keychain item.
+
+For automation or local development, environment variables still override the
+saved login:
+
+```bash
+export PAPER_AMIGO_URL=http://localhost:3000
+export PAPER_AMIGO_OWNER_EMAIL=owner@example.com
+export PAPER_AMIGO_OWNER_PASSWORD='owner-password'
 ```
 
 Use `--json` for agent-readable output. `upload` also accepts `--dry-run`; it
