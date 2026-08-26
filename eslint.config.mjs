@@ -37,6 +37,14 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/switch-exhaustiveness-check": "error",
     },
   },
+  {
+    name: "paper-amigo/uploadthing-effect-errors",
+    files: ["app/api/uploadthing/core.ts"],
+    rules: {
+      // UploadThing requires its Effect error class for route error serialization.
+      "@typescript-eslint/only-throw-error": "off",
+    },
+  },
   prettierConfig,
   globalIgnores([
     ".next/**",

@@ -10,7 +10,8 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { critiques, getPaper, papers, shareLinks } from "@/lib/papers"
+import { getPrivatePaperUrl, getStoredPaper } from "@/lib/paper-storage"
+import { critiques, papers, shareLinks } from "@/lib/papers"
 
 export function generateStaticParams() {
   return papers.map((paper) => ({ paperId: paper.id }))
@@ -20,7 +21,10 @@ export default async function PaperPage({
   params,
 }: PageProps<"/papers/[paperId]">) {
   const { paperId } = await params
-  const paper = getPaper(paperId)
+  const [paper, privateUrl] = await Promise.all([
+    getStoredPaper(paperId),
+    getPrivatePaperUrl(paperId),
+  ])
 
   if (paper === undefined) {
     notFound()
@@ -80,31 +84,23 @@ export default async function PaperPage({
             </span>
             <span>1 / —</span>
           </div>
-          <div className="mx-auto aspect-[1/1.414] w-full max-w-3xl bg-white p-[8%] text-black">
-            <div className="mx-auto h-full max-w-xl">
-              <p className="font-mono text-[clamp(0.3rem,1vw,0.6rem)] tracking-[0.12em] text-neutral-500 uppercase">
-                PDF viewer not connected
-              </p>
-              <h2 className="mt-[8%] text-[clamp(1rem,3vw,2.25rem)] leading-tight font-semibold tracking-[-0.03em]">
-                {paper.fileName}
-              </h2>
-              <div className="mt-[7%] h-px bg-neutral-300" />
-              <div className="mt-[7%] space-y-[3%]">
-                {Array.from({ length: 11 }, (_, index) => (
-                  <div
-                    key={index}
-                    className="h-[clamp(2px,0.45vw,5px)] bg-neutral-200"
-                    style={{ width: `${String(92 - (index % 4) * 7)}%` }}
-                  />
-                ))}
-              </div>
-              <div className="mt-[9%] border-l-[clamp(2px,0.4vw,4px)] border-black bg-neutral-100 p-[5%]">
-                <div className="h-[clamp(3px,0.55vw,6px)] w-1/3 bg-neutral-400" />
-                <div className="mt-[4%] h-[clamp(2px,0.45vw,5px)] w-full bg-neutral-300" />
-                <div className="mt-[3%] h-[clamp(2px,0.45vw,5px)] w-4/5 bg-neutral-300" />
+          {privateUrl ? (
+            <object
+              data={privateUrl}
+              type="application/pdf"
+              aria-label={paper.fileName}
+              className="h-[calc(100svh-13rem)] min-h-[32rem] w-full bg-white"
+            >
+              <p className="p-6 text-sm text-black">Preview unavailable</p>
+            </object>
+          ) : (
+            <div className="mx-auto grid aspect-[1/1.414] w-full max-w-3xl place-items-center bg-white p-8 text-center text-black">
+              <div>
+                <FileText aria-hidden="true" className="mx-auto size-8" />
+                <p className="mt-4 text-sm font-medium">Preview unavailable</p>
               </div>
             </div>
-          </div>
+          )}
         </section>
 
         <aside className="space-y-3">

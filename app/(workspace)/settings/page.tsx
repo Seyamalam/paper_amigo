@@ -1,42 +1,72 @@
-import { Check, CircleAlert, KeyRound, ShieldCheck } from "lucide-react"
+import {
+  Check,
+  CheckCircle2,
+  CircleAlert,
+  KeyRound,
+  ShieldCheck,
+} from "lucide-react"
 
 import { PageHeading } from "@/components/paper-amigo/page-heading"
 import { Badge } from "@/components/ui/badge"
+import { getAuthEnvironmentState } from "@/lib/auth-environment"
+import { isPaperStorageConfigured } from "@/lib/paper-storage"
+
+type ProviderStatus = "Connected" | "Demo" | "Not connected"
 
 type Provider = Readonly<{
   name: string
   purpose: string
+  status: ProviderStatus
   variables: readonly string[]
 }>
 
-const providers: readonly Provider[] = [
-  {
-    name: "Owner login",
-    purpose: "Single owner credential and encrypted stateless sessions",
-    variables: [
-      "BETTER_AUTH_SECRET",
-      "PAPER_AMIGO_OWNER_EMAIL",
-      "PAPER_AMIGO_OWNER_PASSWORD",
-    ],
-  },
-  {
-    name: "UploadThing",
-    purpose: "Private PDF bytes and short-lived signed access",
-    variables: ["UPLOADTHING_TOKEN"],
-  },
-  {
-    name: "Managed KV",
-    purpose: "Share grants, view aggregates, and private critiques",
-    variables: ["KV_REST_API_URL", "KV_REST_API_TOKEN"],
-  },
-  {
-    name: "CLI ingestion",
-    purpose: "Scoped uploads and paper listing for local agents",
-    variables: ["PAPER_AMIGO_INGESTION_TOKEN"],
-  },
-]
+function isConfigured(variable: string): boolean {
+  return Boolean(process.env[variable]?.trim())
+}
 
 export default function SettingsPage() {
+  const authState = getAuthEnvironmentState()
+  const providers: readonly Provider[] = [
+    {
+      name: "Owner login",
+      purpose: "Single owner credential and encrypted stateless sessions",
+      status:
+        authState.kind === "configured"
+          ? "Connected"
+          : authState.kind === "demo"
+            ? "Demo"
+            : "Not connected",
+      variables: [
+        "BETTER_AUTH_SECRET",
+        "PAPER_AMIGO_OWNER_EMAIL",
+        "PAPER_AMIGO_OWNER_PASSWORD",
+      ],
+    },
+    {
+      name: "UploadThing",
+      purpose: "Private PDF bytes and short-lived signed access",
+      status: isPaperStorageConfigured() ? "Connected" : "Not connected",
+      variables: ["UPLOADTHING_TOKEN"],
+    },
+    {
+      name: "Managed KV",
+      purpose: "Share grants, view aggregates, and private critiques",
+      status:
+        isConfigured("KV_REST_API_URL") && isConfigured("KV_REST_API_TOKEN")
+          ? "Connected"
+          : "Not connected",
+      variables: ["KV_REST_API_URL", "KV_REST_API_TOKEN"],
+    },
+    {
+      name: "CLI ingestion",
+      purpose: "Scoped uploads and paper listing for local agents",
+      status: isConfigured("PAPER_AMIGO_INGESTION_TOKEN")
+        ? "Connected"
+        : "Not connected",
+      variables: ["PAPER_AMIGO_INGESTION_TOKEN"],
+    },
+  ]
+
   return (
     <div className="space-y-7">
       <PageHeading eyebrow="Local configuration" title="Settings" />
@@ -49,8 +79,12 @@ export default function SettingsPage() {
                 <KeyRound aria-hidden="true" className="size-4" />
               </span>
               <Badge variant="outline" className="rounded-sm">
-                <CircleAlert aria-hidden="true" data-icon="inline-start" />
-                Not connected
+                {provider.status === "Connected" ? (
+                  <CheckCircle2 aria-hidden="true" data-icon="inline-start" />
+                ) : (
+                  <CircleAlert aria-hidden="true" data-icon="inline-start" />
+                )}
+                {provider.status}
               </Badge>
             </div>
             <h2 className="mt-5 text-base font-semibold">{provider.name}</h2>
@@ -74,7 +108,7 @@ export default function SettingsPage() {
 
       <div className="flex gap-3 border bg-muted/40 p-4 text-xs leading-5">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-        Service status will use server-side environment checks.
+        Status checks read variable presence only. Values stay server-side.
       </div>
     </div>
   )

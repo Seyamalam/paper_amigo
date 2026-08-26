@@ -1,9 +1,8 @@
-import { CheckCircle2, FileUp, FolderOpen, LockKeyhole } from "lucide-react"
+import { CheckCircle2, FileUp, LockKeyhole } from "lucide-react"
 
 import { PageHeading } from "@/components/paper-amigo/page-heading"
-import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { PaperUploadQueue } from "@/components/paper-amigo/paper-upload-queue"
+import { isPaperStorageConfigured } from "@/lib/paper-storage"
 
 const checks: readonly string[] = [
   "PDF files only, up to 64 MB each",
@@ -12,9 +11,16 @@ const checks: readonly string[] = [
 ]
 
 export default function UploadPage() {
+  const storageConfigured = isPaperStorageConfigured()
+
   return (
     <div className="space-y-7">
-      <PageHeading eyebrow="Storage not connected" title="Upload papers" />
+      <PageHeading
+        eyebrow={
+          storageConfigured ? "Private storage" : "Storage not connected"
+        }
+        title="Upload papers"
+      />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(17rem,0.75fr)]">
         <section
@@ -30,51 +36,12 @@ export default function UploadPage() {
                 Browser upload
               </h2>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                UploadThing not connected
+                {storageConfigured ? "PDF only" : "UploadThing not connected"}
               </p>
             </div>
           </div>
 
-          <Field className="mt-7" data-disabled>
-            <FieldLabel htmlFor="paper-files" className="sr-only">
-              Choose PDF files
-            </FieldLabel>
-            <label
-              htmlFor="paper-files"
-              className="flex min-h-64 cursor-not-allowed flex-col items-center justify-center border border-dashed bg-muted/30 p-8 text-center opacity-70"
-            >
-              <FolderOpen
-                aria-hidden="true"
-                className="size-8"
-                strokeWidth={1.4}
-              />
-              <span className="mt-5 text-lg font-semibold">
-                Select PDF files
-              </span>
-              <span className="mt-2 max-w-xs text-xs leading-5 text-muted-foreground">
-                Connect UploadThing to enable uploads.
-              </span>
-            </label>
-            <Input
-              id="paper-files"
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              disabled
-              className="sr-only"
-            />
-            <FieldDescription>
-              Files upload directly to private storage.
-            </FieldDescription>
-          </Field>
-
-          <Button
-            disabled
-            className="mt-6 w-full sm:w-auto"
-            title="Connect UploadThing first"
-          >
-            Start private upload
-          </Button>
+          <PaperUploadQueue enabled={storageConfigured} />
         </section>
 
         <aside className="space-y-5">

@@ -22,7 +22,9 @@ export type OwnerAccess =
       variables: readonly AuthVariableName[]
     }>
 
-export async function getOwnerAccess(): Promise<OwnerAccess> {
+export async function getOwnerAccessFromToken(
+  token: string | undefined
+): Promise<OwnerAccess> {
   const state = getAuthEnvironmentState()
 
   if (state.kind === "demo") {
@@ -33,7 +35,6 @@ export async function getOwnerAccess(): Promise<OwnerAccess> {
     return { kind: "configuration-error", variables: state.variables }
   }
 
-  const token = (await cookies()).get(ownerSessionCookieName)?.value
   const email = await readOwnerSessionEmail(token, state.configuration.secret)
 
   if (!email) {
@@ -45,4 +46,10 @@ export async function getOwnerAccess(): Promise<OwnerAccess> {
   }
 
   return { kind: "owner", email }
+}
+
+export async function getOwnerAccess(): Promise<OwnerAccess> {
+  const token = (await cookies()).get(ownerSessionCookieName)?.value
+
+  return getOwnerAccessFromToken(token)
 }

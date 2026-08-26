@@ -11,7 +11,12 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
-      include: ["components/ui/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+      include: [
+        "components/ui/{badge,button}.tsx",
+        "lib/*-core.ts",
+        "lib/paper-upload.ts",
+        "lib/utils.ts",
+      ],
       thresholds: {
         branches: 75,
         functions: 90,

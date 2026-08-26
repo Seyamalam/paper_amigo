@@ -37,6 +37,8 @@ PAPER_AMIGO_INGESTION_TOKEN
 - Set `PAPER_AMIGO_OWNER_EMAIL` to the only email allowed to sign in.
 - Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password with at least 12
   characters. A password-manager-generated value is recommended.
+- Create an UploadThing app, enable ACL overrides, and set its default ACL to
+  private. Copy its v7 token into `UPLOADTHING_TOKEN`.
 - Keep all of these server-only. Do not add a `NEXT_PUBLIC_` prefix.
 
 The managed KV variables will be added after its provider is selected. Vercel
@@ -47,6 +49,11 @@ There is no signup or password-reset flow. Change the owner password in Vercel
 and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser.
 The password remains in server environment configuration; browser sessions
 contain only the owner email in a seven-day encrypted JWE.
+
+Browser uploads accept up to ten PDFs per batch and 64 MB per file. The browser
+calculates SHA-256 before upload. UploadThing stores that hash as the custom file
+ID, so duplicate content is skipped without a paper database. Uploads run with
+three workers and report each file separately.
 
 ## Quality checks
 

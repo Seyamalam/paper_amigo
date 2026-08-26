@@ -1,7 +1,7 @@
 # Paper Amigo V1 requirements
 
-Status: confirmed product requirements. The responsive product shell and
-stateless owner-auth boundary are implemented. Storage, durable records, CLI,
+Status: confirmed product requirements. The responsive product shell, stateless
+owner auth, and private browser ingestion are implemented. Durable records, CLI,
 and skill integrations have not started.
 
 ## Product boundary
@@ -35,8 +35,8 @@ The key-value provider remains an implementation decision.
   an owner session.
 - The sign-in page must show a generic error for invalid credentials.
 - The application must provide sign-out.
-- V1 does not support password login, public registration, roles, organizations,
-  or centrally revoking individual browser sessions.
+- V1 does not support third-party OAuth, public registration, roles,
+  organizations, or centrally revoking individual browser sessions.
 
 ## Paper library
 

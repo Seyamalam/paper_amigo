@@ -1,13 +1,14 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it } from "vitest"
 
-import Page from "@/app/(workspace)/page"
+import { PaperLibrary } from "@/components/paper-amigo/paper-library"
+import { papers } from "@/lib/papers"
 
 afterEach(cleanup)
 
 describe("Page", () => {
   it("renders the research library", () => {
-    render(<Page />)
+    render(<PaperLibrary papers={papers} showPreviewNotice />)
 
     expect(
       screen.getByRole("heading", {
