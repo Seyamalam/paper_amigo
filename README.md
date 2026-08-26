@@ -30,7 +30,6 @@ BETTER_AUTH_SECRET
 PAPER_AMIGO_OWNER_EMAIL
 PAPER_AMIGO_OWNER_PASSWORD
 UPLOADTHING_TOKEN
-PAPER_AMIGO_INGESTION_TOKEN
 ```
 
 - Generate `BETTER_AUTH_SECRET` with `openssl rand -base64 32`.
@@ -55,6 +54,37 @@ Browser uploads accept up to ten PDFs per batch and 64 MB per file. The browser
 calculates SHA-256 before upload. UploadThing stores that hash as the custom file
 ID, so duplicate content is skipped without a paper database. Uploads run with
 three workers and report each file separately.
+
+## CLI
+
+The CLI uses the same owner email and password as the web app. It requests a
+short-lived upload URL from Paper Amigo, then sends each PDF directly to private
+UploadThing storage.
+
+Run it from this checkout:
+
+```bash
+export PAPER_AMIGO_URL=https://paper-amigo.vercel.app
+export PAPER_AMIGO_OWNER_EMAIL=owner@example.com
+export PAPER_AMIGO_OWNER_PASSWORD='your-owner-password'
+
+bun run cli doctor
+bun run cli list
+bun run cli upload ./paper.pdf
+bun run cli upload ./research --recursive --concurrency 3
+```
+
+Install the `paper-amigo` command from this checkout with `bun link`:
+
+```bash
+bun link
+paper-amigo doctor
+```
+
+Use `--json` for agent-readable output. `upload` also accepts `--dry-run`; it
+discovers, validates, and hashes files without credentials or network access.
+Directory scans ignore non-PDF files. Explicit non-PDF paths and failed uploads
+produce a nonzero exit code. The CLI never prints credentials.
 
 ## Quality checks
 
@@ -99,7 +129,7 @@ bun run ci
 
 `bun run ci` checks formatting, runs Oxlint and ESLint, generates Next.js route
 types, runs TypeScript and unit tests, audits production dependencies, and builds
-the production application.
+the production application and standalone CLI.
 
 ## Releases
 

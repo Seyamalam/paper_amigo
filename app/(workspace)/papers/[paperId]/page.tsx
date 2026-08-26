@@ -11,11 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getPrivatePaperUrl, getStoredPaper } from "@/lib/paper-storage"
-import { critiques, papers, shareLinks } from "@/lib/papers"
-
-export function generateStaticParams() {
-  return papers.map((paper) => ({ paperId: paper.id }))
-}
 
 export default async function PaperPage({
   params,
@@ -29,13 +24,6 @@ export default async function PaperPage({
   if (paper === undefined) {
     notFound()
   }
-
-  const relatedLinks = shareLinks.filter(
-    (shareLink) => shareLink.paperId === paper.id
-  )
-  const relatedCritiques = critiques.filter(
-    (critique) => critique.paperId === paper.id
-  )
 
   return (
     <div className="space-y-5">
@@ -138,47 +126,18 @@ export default async function PaperPage({
               />
             </div>
             <div className="mt-3 space-y-2">
-              {relatedLinks.length === 0 ? (
-                <p className="text-xs leading-5 text-muted-foreground">
-                  No preview links for this paper.
-                </p>
-              ) : (
-                relatedLinks.map((shareLink) => (
-                  <div
-                    key={shareLink.id}
-                    className="border-l-2 border-foreground bg-muted/40 px-3 py-2.5"
-                  >
-                    <p className="text-xs font-medium">{shareLink.label}</p>
-                    <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-                      {shareLink.views} views · {shareLink.visitors} estimated
-                      visitors
-                    </p>
-                  </div>
-                ))
-              )}
+              <p className="text-xs leading-5 text-muted-foreground">
+                No share links.
+              </p>
             </div>
           </section>
 
           <section className="border bg-card p-4">
             <h2 className="text-xs font-semibold">Latest critiques</h2>
             <div className="mt-3 space-y-3">
-              {relatedCritiques.length === 0 ? (
-                <p className="text-xs leading-5 text-muted-foreground">
-                  No critiques received yet.
-                </p>
-              ) : (
-                relatedCritiques.map((critique) => (
-                  <blockquote
-                    key={critique.id}
-                    className="border-l-2 pl-3 text-xs leading-5 text-muted-foreground"
-                  >
-                    “{critique.excerpt}”
-                    <footer className="mt-1 font-mono text-[9px]">
-                      {critique.author} · p. {critique.page}
-                    </footer>
-                  </blockquote>
-                ))
-              )}
+              <p className="text-xs leading-5 text-muted-foreground">
+                No critiques.
+              </p>
             </div>
           </section>
         </aside>

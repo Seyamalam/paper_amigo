@@ -93,9 +93,9 @@ CLI requirements:
 - Print uploaded, skipped, and failed results.
 - Return a nonzero exit code when any requested upload fails.
 - Use stable machine-readable error codes in JSON mode.
-- Read the application URL and ingestion credential from environment variables.
+- Read the application URL and owner credentials from environment variables.
 - Never require or expose the UploadThing server token.
-- Never print ingestion credentials in output or logs.
+- Never print owner credentials in output or logs.
 
 ## Agent skill
 
@@ -110,7 +110,7 @@ The agent skill is the only agent-facing integration in V1. It must:
 - Interpret structured CLI results and report uploaded, skipped, and failed
   papers.
 - Retry only failures marked as retryable.
-- Never read, request, or echo the ingestion credential.
+- Never read, request, or echo owner credentials.
 - Explain how to install or configure the CLI when `doctor` fails.
 
 The skill contains instructions and recovery guidance. The CLI contains all file
@@ -118,11 +118,11 @@ discovery, hashing, validation, authentication, upload, and retry behavior.
 
 ## Machine authentication
 
-- CLI requests use a dedicated bearer ingestion credential.
-- The credential is separate from the owner login and the UploadThing token.
-- It grants ingestion and paper-listing access only.
-- The server reads it from environment configuration.
-- Operators rotate it manually.
+- CLI requests use HTTP Basic authentication over HTTPS with the same owner email
+  and password as the web sign-in.
+- The credential grants ingestion and paper-listing access only and never exposes
+  the UploadThing token.
+- Operators rotate it with the owner login password.
 - Individually issued or remotely revoked agent credentials are out of scope for
   V1.
 

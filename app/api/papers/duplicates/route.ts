@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
-import { getOwnerAccess } from "@/lib/owner-access"
+import { getOwnerRequestAccess } from "@/lib/owner-request-access"
 import {
   findDuplicatePaperHashes,
   isPaperStorageConfigured,
 } from "@/lib/paper-storage"
 import { paperUploadInputSchema } from "@/lib/paper-upload"
 
-export async function POST(request: Request): Promise<NextResponse> {
-  const access = await getOwnerAccess()
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const access = await getOwnerRequestAccess(request)
 
   if (access.kind !== "demo" && access.kind !== "owner") {
     return NextResponse.json({ error: "Sign in required" }, { status: 401 })

@@ -1,8 +1,8 @@
 import { UploadThingError } from "uploadthing/server"
 import { createUploadthing, UTFiles, type FileRouter } from "uploadthing/next"
 
-import { getOwnerAccessFromToken, type OwnerAccess } from "@/lib/owner-access"
-import { ownerSessionCookieName } from "@/lib/owner-session"
+import type { OwnerAccess } from "@/lib/owner-access"
+import { getOwnerRequestAccess } from "@/lib/owner-request-access"
 import {
   findDuplicatePaperHashes,
   isPaperStorageConfigured,
@@ -36,8 +36,7 @@ export const paperFileRouter = {
   })
     .input(paperUploadInputSchema)
     .middleware(async ({ files, input, req }) => {
-      const token = req.cookies.get(ownerSessionCookieName)?.value
-      const access = await getOwnerAccessFromToken(token)
+      const access = await getOwnerRequestAccess(req)
 
       if (!isGrantedAccess(access)) {
         rejectUpload("FORBIDDEN", "Sign in required")

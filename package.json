@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
+  "bin": {
+    "paper-amigo": "./cli/paper-amigo.ts"
+  },
   "packageManager": "bun@1.4.0",
   "engines": {
     "node": ">=20.9.0"
@@ -14,6 +17,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "cli": "bun run ./cli/paper-amigo.ts",
+    "cli:build": "bun build ./cli/paper-amigo.ts --compile --outfile ./dist/paper-amigo",
     "lint": "bun run lint:oxlint && bun run lint:eslint",
     "lint:oxlint": "oxlint .",
     "lint:eslint": "eslint . --max-warnings=0",
@@ -26,7 +31,7 @@
     "test:coverage": "vitest run --coverage",
     "audit": "bun audit --production",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test",
-    "ci": "bun run check && bun run audit && bun run build",
+    "ci": "bun run check && bun run audit && bun run build && bun run cli:build",
     "prepare": "husky"
   },
   "dependencies": {

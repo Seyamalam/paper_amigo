@@ -4,10 +4,5 @@ import { getPaperLibrary } from "@/lib/paper-storage"
 export default async function Page() {
   const library = await getPaperLibrary()
 
-  return (
-    <PaperLibrary
-      papers={library.papers}
-      showPreviewNotice={library.kind === "preview"}
-    />
-  )
+  return <PaperLibrary papers={library.papers} />
 }

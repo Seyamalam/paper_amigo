@@ -59,11 +59,9 @@ export default function SettingsPage() {
     },
     {
       name: "CLI ingestion",
-      purpose: "Scoped uploads and paper listing for local agents",
-      status: isConfigured("PAPER_AMIGO_INGESTION_TOKEN")
-        ? "Connected"
-        : "Not connected",
-      variables: ["PAPER_AMIGO_INGESTION_TOKEN"],
+      purpose: "Direct PDF uploads using the owner login",
+      status: authState.kind === "configured" ? "Connected" : "Not connected",
+      variables: ["PAPER_AMIGO_OWNER_EMAIL", "PAPER_AMIGO_OWNER_PASSWORD"],
     },
   ]
 

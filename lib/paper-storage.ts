@@ -3,7 +3,7 @@ import "server-only"
 import { cache } from "react"
 import { UTApi } from "uploadthing/server"
 
-import { papers as demoPapers, type Paper } from "@/lib/papers"
+import type { Paper } from "@/lib/papers"
 import { formatFileSize } from "@/lib/paper-upload"
 
 type StoredFile = Readonly<{
@@ -16,7 +16,7 @@ type StoredFile = Readonly<{
 }>
 
 export type PaperLibraryState =
-  | Readonly<{ kind: "preview"; papers: readonly Paper[] }>
+  | Readonly<{ kind: "unconfigured"; papers: readonly Paper[] }>
   | Readonly<{ kind: "ready"; papers: readonly Paper[] }>
 
 function getUploadThingToken(): string | undefined {
@@ -89,7 +89,7 @@ export function isPaperStorageConfigured(): boolean {
 
 export async function getPaperLibrary(): Promise<PaperLibraryState> {
   if (!isPaperStorageConfigured()) {
-    return { kind: "preview", papers: demoPapers }
+    return { kind: "unconfigured", papers: [] }
   }
 
   const files = await listStoredFiles()
@@ -118,7 +118,7 @@ export async function getStoredPaper(
   paperId: string
 ): Promise<Paper | undefined> {
   if (!isPaperStorageConfigured()) {
-    return demoPapers.find((paper) => paper.id === paperId)
+    return undefined
   }
 
   const files = await listStoredFiles()

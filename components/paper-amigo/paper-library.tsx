@@ -6,17 +6,14 @@ import { ArrowDownUp, Plus, Search } from "lucide-react"
 
 import { PageHeading } from "@/components/paper-amigo/page-heading"
 import { PaperCard } from "@/components/paper-amigo/paper-card"
-import { PreviewNotice } from "@/components/paper-amigo/preview-notice"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Paper } from "@/lib/papers"
 
 export function PaperLibrary({
   papers,
-  showPreviewNotice,
 }: Readonly<{
   papers: readonly Paper[]
-  showPreviewNotice: boolean
 }>) {
   const [query, setQuery] = useState("")
   const [oldestFirst, setOldestFirst] = useState(false)
@@ -44,8 +41,6 @@ export function PaperLibrary({
           </Button>
         }
       />
-
-      {showPreviewNotice ? <PreviewNotice /> : null}
 
       <section aria-labelledby="library-heading" className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
