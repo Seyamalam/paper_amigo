@@ -243,7 +243,7 @@ export async function createProject(
       schemaVersion: 1,
       files: verifiedFiles.map((file) => ({
         key: file.key,
-        hash: file.customId,
+        hash: projectFileHashFromCustomId(file.customId),
         name: file.name,
         size: file.size,
         uploadedAt: timestampToIso(file.uploadedAt),
