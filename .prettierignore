@@ -5,3 +5,15 @@ node_modules/
 coverage/
 pnpm-lock.yaml
 .pnpm-store/
+.agent/
+.agents/
+.claude/
+.codex/
+.continue/
+.cursor/
+.gemini/
+.opencode/
+.pi/
+.roo/
+.windsurf/
+tools/oxlint/anti-slop/

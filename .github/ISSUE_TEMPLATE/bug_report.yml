@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a reproducible problem in Paper Amigo.
+title: "fix: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Do not report security or conduct issues here. Use SECURITY.md or
+        CODE_OF_CONDUCT.md.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest reliable sequence that shows the problem.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.0.1 or a commit SHA
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser, operating system, Node.js, and Bun versions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs or screenshots
+      description: Remove secrets and personal data before pasting anything.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for an existing issue.
+          required: true
+        - label: This report does not contain a secret or security vulnerability.
+          required: true

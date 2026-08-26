@@ -1,0 +1,40 @@
+name: Feature request
+description: Propose a focused product or developer-experience change.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cannot be done today, and who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the result, not only the implementation.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: List current workarounds or simpler options you considered.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Add examples, sketches, links, or constraints.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched for an existing issue or proposal.
+          required: true
