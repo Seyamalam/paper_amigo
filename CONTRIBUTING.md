@@ -64,14 +64,21 @@ mixes unrelated concerns.
 
 ## Releases
 
-Release Please reads Conventional Commits merged into `master`. It keeps one
-release pull request updated with the next version and changelog. Merging that
-pull request creates the GitHub release and a `vX.Y.Z` tag.
+Releases run locally. Pick the next Semantic Versioning number, update
+`CHANGELOG.md` and `package.json`, then run:
 
-For release pull requests to trigger other workflows, add a fine-grained token
-as the `RELEASE_PLEASE_TOKEN` repository secret. Grant it repository Contents
-and Pull requests read/write access. Without that secret, the workflow uses the
-built-in `GITHUB_TOKEN`.
+```bash
+bun install
+bun run ci
+git add CHANGELOG.md package.json bun.lock
+git commit -m "chore: release vX.Y.Z"
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin master
+git push origin vX.Y.Z
+```
+
+Replace `X.Y.Z` with the version in `package.json`. Do not tag a commit that
+fails `bun run ci`.
 
 ## Reporting problems
 

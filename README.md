@@ -21,7 +21,7 @@ Open <http://localhost:3000>.
 
 ```bash
 bun run check          # formatting, both linters, types, and unit tests
-bun run ci             # all checks plus a production build
+bun run ci             # local CI: checks, audit, and production build
 bun run lint           # Oxlint followed by typed ESLint
 bun run lint:fix       # apply safe lint fixes
 bun run format         # format the repository
@@ -49,12 +49,24 @@ Import components through the `@/` alias:
 import { Button } from "@/components/ui/button"
 ```
 
+## Local CI
+
+The project does not use GitHub Actions. Run the complete gate on your machine:
+
+```bash
+bun install --frozen-lockfile
+bun run ci
+```
+
+`bun run ci` checks formatting, runs Oxlint and ESLint, generates Next.js route
+types, runs TypeScript and unit tests, audits production dependencies, and builds
+the production application.
+
 ## Releases
 
-Release Please reads Conventional Commits on `master`. It opens a release pull
-request that updates `CHANGELOG.md` and `package.json`. Merging that pull request
-creates a GitHub release and a `vX.Y.Z` tag. See [CONTRIBUTING.md](CONTRIBUTING.md)
-for commit types and the full workflow.
+Releases are manual for now. Update `CHANGELOG.md` and the version in
+`package.json`, refresh `bun.lock`, run `bun run ci`, commit, then create and push
+an annotated `vX.Y.Z` tag. See [CONTRIBUTING.md](CONTRIBUTING.md) for the commands.
 
 ## Project policies
 
