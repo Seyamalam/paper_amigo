@@ -32,6 +32,11 @@ export type ReplacedProjectFile = Readonly<{
   previousFileDeleted: boolean
 }>
 
+export type DeletedProjectStorage = Readonly<{
+  deletedManifests: number
+  deletedProjectFiles: number
+}>
+
 const manifestNamePrefix = "paper-amigo-project."
 const manifestCustomIdPrefix = "pa-project-"
 
@@ -60,6 +65,13 @@ function isManifest(file: StoredFile): boolean {
     file.status === "Uploaded" &&
     file.name.startsWith(manifestNamePrefix) &&
     file.name.endsWith(".json")
+  )
+}
+
+function isProjectManifest(file: StoredFile, projectId: string): boolean {
+  return (
+    isManifest(file) &&
+    file.name.startsWith(`${manifestNamePrefix}${projectId}.`)
   )
 }
 
@@ -194,6 +206,24 @@ async function safelyDeleteFile(
   } catch {
     return false
   }
+}
+
+async function deleteStoredFiles(
+  uploadThing: UTApi,
+  keys: readonly string[],
+  label: string
+): Promise<number> {
+  if (keys.length === 0) {
+    return 0
+  }
+
+  const deleted = await uploadThing.deleteFiles([...keys])
+
+  if (!deleted.success || deleted.deletedCount !== keys.length) {
+    throw new Error(`${label} deletion was incomplete`)
+  }
+
+  return deleted.deletedCount
 }
 
 export function isProjectStorageConfigured(): boolean {
@@ -405,4 +435,42 @@ export async function replaceProjectFile(
     project: replacementProject,
     previousFileDeleted: await safelyDeleteFile(uploadThing, target.key),
   }
+}
+
+export async function deleteProjectStorage(
+  projectId: string
+): Promise<DeletedProjectStorage> {
+  const uploadThing = getUploadThingApi()
+  const storedFiles = await listStoredFiles()
+  const projects = await readProjects(storedFiles)
+  const project = projects.find((candidate) => candidate.id === projectId)
+
+  if (!project) {
+    throw new Error("Project not found")
+  }
+
+  const storedKeys = new Set(
+    storedFiles
+      .filter((file) => file.status === "Uploaded")
+      .map((file) => file.key)
+  )
+  const projectFileKeys = project.files
+    .map((file) => file.key)
+    .filter((key) => storedKeys.has(key))
+  const manifestKeys = storedFiles
+    .filter((file) => isProjectManifest(file, projectId))
+    .map((file) => file.key)
+
+  const deletedProjectFiles = await deleteStoredFiles(
+    uploadThing,
+    projectFileKeys,
+    "Project file"
+  )
+  const deletedManifests = await deleteStoredFiles(
+    uploadThing,
+    manifestKeys,
+    "Project manifest"
+  )
+
+  return { deletedManifests, deletedProjectFiles }
 }

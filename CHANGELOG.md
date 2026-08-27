@@ -6,6 +6,15 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ## Unreleased
 
+## 0.4.0 (2026-08-27)
+
+### Features
+
+- Add exact-title-confirmed project deletion to the owner UI and CLI.
+- Remove attached PDFs, manifest revisions, share links, views, and critiques
+  when deleting a project.
+- Add an authenticated, retry-safe project deletion API.
+
 ## 0.3.0 (2026-08-27)
 
 ### Features

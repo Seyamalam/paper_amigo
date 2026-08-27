@@ -45,6 +45,10 @@ export const replaceProjectFileInputSchema = z.object({
   file: uploadedProjectFileSchema,
 })
 
+export const deleteProjectInputSchema = z.object({
+  confirmation: requiredText("Project title confirmation", 240),
+})
+
 export const projectSchema = createProjectInputSchema
   .omit({ files: true })
   .extend({
@@ -61,6 +65,14 @@ export const projectsResponseSchema = z.object({
 export const replaceProjectFileResponseSchema = z.object({
   project: projectSchema,
   previousFileDeleted: z.boolean(),
+})
+
+export const deleteProjectResponseSchema = z.object({
+  deleted: z.boolean(),
+  deletedManifests: z.number().int().nonnegative(),
+  deletedProjectFiles: z.number().int().nonnegative(),
+  deletedSharingRecords: z.number().int().nonnegative(),
+  projectId: z.uuid(),
 })
 
 export function withReplacedProjectFile(
@@ -93,4 +105,6 @@ export type ReplaceProjectFileInput = z.infer<
 export type ReplaceProjectFileResponse = z.infer<
   typeof replaceProjectFileResponseSchema
 >
+export type DeleteProjectInput = z.infer<typeof deleteProjectInputSchema>
+export type DeleteProjectResponse = z.infer<typeof deleteProjectResponseSchema>
 export type Project = z.infer<typeof projectSchema>

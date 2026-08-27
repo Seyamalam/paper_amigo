@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   CliRequestError,
+  deleteProject,
   defaultPaperAmigoUrl,
   readCliConfiguration,
   replaceProjectFile,
@@ -131,6 +132,54 @@ describe("replaceProjectFile", () => {
       "/api/projects/416d1b34-b331-4f18-8224-39f8a149908f/files/old%2Fkey"
     )
     expect(request?.method).toBe("PUT")
+    expect(new Headers(request?.headers).get("Authorization")).toBe(
+      configuration.authorization
+    )
+  })
+})
+
+describe("deleteProject", () => {
+  it("sends an authenticated confirmed deletion request", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        deleted: true,
+        deletedManifests: 2,
+        deletedProjectFiles: 3,
+        deletedSharingRecords: 4,
+        projectId: "416d1b34-b331-4f18-8224-39f8a149908f",
+      })
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const configuration = readCliConfiguration({}, storedCredentials)
+
+    const result = await deleteProject(
+      configuration,
+      "416d1b34-b331-4f18-8224-39f8a149908f",
+      "Study title"
+    )
+
+    expect(result.deleted).toBe(true)
+    const firstCall = fetchMock.mock.calls[0]
+
+    expect(firstCall).toBeDefined()
+
+    if (!firstCall) {
+      throw new Error("Deletion request was not sent")
+    }
+
+    const [requestUrl, request] = firstCall
+
+    expect(requestUrl).toBeInstanceOf(URL)
+
+    if (!(requestUrl instanceof URL)) {
+      throw new Error("Deletion URL was not normalized")
+    }
+
+    expect(requestUrl.pathname).toBe(
+      "/api/projects/416d1b34-b331-4f18-8224-39f8a149908f"
+    )
+    expect(request?.method).toBe("DELETE")
+    expect(request?.body).toBe(JSON.stringify({ confirmation: "Study title" }))
     expect(new Headers(request?.headers).get("Authorization")).toBe(
       configuration.authorization
     )

@@ -2,12 +2,23 @@ import { describe, expect, it } from "vitest"
 
 import {
   createProjectInputSchema,
+  deleteProjectInputSchema,
   projectAuthorSchema,
   withReplacedProjectFile,
   type Project,
 } from "@/lib/projects"
 
 describe("project schemas", () => {
+  it("requires a non-empty exact-title deletion confirmation", () => {
+    expect(
+      deleteProjectInputSchema.safeParse({ confirmation: "Climate study" })
+        .success
+    ).toBe(true)
+    expect(
+      deleteProjectInputSchema.safeParse({ confirmation: "" }).success
+    ).toBe(false)
+  })
+
   it("accepts multiple files and optional author identifiers", () => {
     const parsed = createProjectInputSchema.safeParse({
       id: "0f5a034d-c19a-4b77-8605-c1f3b30ad3c2",

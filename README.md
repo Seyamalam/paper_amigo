@@ -69,6 +69,10 @@ estimated unique browsers. It stores share links, views, and critiques as
 encrypted append-only UploadThing records. PDF pages render in an in-app canvas
 instead of depending on a browser PDF plugin.
 
+The owner can permanently delete a project from its project page after typing
+the exact project title. Deletion removes attached PDFs, manifest revisions,
+share links, views, and critiques.
+
 ## CLI
 
 The CLI uses the same owner email and password as the web app. On macOS,
@@ -87,6 +91,7 @@ bun run cli project create ./research --recursive \
   --author "Name|Designation|University|ORCID|Profile URL"
 bun run cli project replace <project-id> <current-file-name-or-key> \
   ./revised.pdf --json
+bun run cli project delete <project-id> --confirm "Exact project title" --json
 ```
 
 Install the `paper-amigo` command from this checkout with `bun link`:
@@ -122,9 +127,13 @@ be an exact filename or the file key returned by `project list --json`. Existing
 share links immediately resolve the new project manifest. The previous PDF is
 removed only after that manifest is committed. The CLI never prints credentials.
 
+Use `paper-amigo project delete <project-id> --confirm "Exact project title"
+--json` to permanently delete a project and its storage records. The exact title
+confirmation is required in both interactive and automated use.
+
 The versioned agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and
 delegates file discovery, hashing, authentication, upload, and replacement work
-to the CLI.
+to the CLI. It also documents the confirmation rules for permanent deletion.
 
 ## Quality checks
 

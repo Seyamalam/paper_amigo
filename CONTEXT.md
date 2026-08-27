@@ -39,6 +39,11 @@ Substituting one project file with a newer PDF. The prior file stops being part
 of the project, while the project and its share links remain the same.
 _Avoid_: Edit, overwrite
 
+**Deletion**:
+Permanent removal of one project, its project files, share links, views, and
+critiques. It cannot be undone.
+_Avoid_: Archive, hide, remove
+
 **Share link**:
 A revocable secret link that grants recipient access to one project.
 _Avoid_: Public link, download link

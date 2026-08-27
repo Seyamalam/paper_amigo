@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CritiqueList } from "@/components/paper-amigo/critique-list"
 import { PdfViewer } from "@/components/paper-amigo/pdf-viewer"
+import { ProjectDeletePanel } from "@/components/paper-amigo/project-delete-panel"
 import { ShareLinkPanel } from "@/components/paper-amigo/share-link-panel"
 import { getProject } from "@/lib/project-storage"
 import { formatFileSize } from "@/lib/paper-upload"
@@ -148,6 +149,8 @@ export default async function ProjectPage({
           <CritiqueList critiques={critiques} />
         </aside>
       </div>
+
+      <ProjectDeletePanel projectId={project.id} projectTitle={project.title} />
     </div>
   )
 }

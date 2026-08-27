@@ -27,6 +27,12 @@ export type CliCommand =
       projectId: string
       target: string
     }>
+  | Readonly<{
+      kind: "project-delete"
+      confirmation: string
+      json: boolean
+      projectId: string
+    }>
 
 export type DiscoveryFailure = Readonly<{
   code: "not-found" | "not-pdf" | "unreadable" | "unsupported"
@@ -96,6 +102,14 @@ function parseInteractiveCommand(
 function optionValue(option: string, value: string | undefined): string {
   if (!value || value.startsWith("-")) {
     throw new CliUsageError(`${option} needs a value`)
+  }
+
+  return value
+}
+
+function confirmationValue(value: string | undefined): string {
+  if (!value) {
+    throw new CliUsageError("--confirm needs a value")
   }
 
   return value
@@ -244,6 +258,46 @@ function parseProjectReplaceCommand(arguments_: readonly string[]): CliCommand {
   return { kind: "project-replace", json, path, projectId, target }
 }
 
+function parseProjectDeleteCommand(arguments_: readonly string[]): CliCommand {
+  const operands: string[] = []
+  let confirmation: string | undefined
+  let json = false
+
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+
+    if (argument === "--json") {
+      json = true
+    } else if (argument === "--help" || argument === "-h") {
+      return { kind: "help" }
+    } else if (argument === "--confirm") {
+      confirmation = confirmationValue(arguments_[index + 1])
+      index += 1
+    } else if (argument?.startsWith("--confirm=")) {
+      confirmation = confirmationValue(argument.slice("--confirm=".length))
+    } else if (argument?.startsWith("-")) {
+      throw new CliUsageError(`Unknown option: ${argument}`)
+    } else if (argument) {
+      operands.push(argument)
+    }
+  }
+
+  if (operands.length !== 1 || !operands[0]) {
+    throw new CliUsageError("project delete needs <project-id>")
+  }
+
+  if (!confirmation) {
+    throw new CliUsageError("project delete needs --confirm <project-title>")
+  }
+
+  return {
+    kind: "project-delete",
+    confirmation,
+    json,
+    projectId: operands[0],
+  }
+}
+
 export function parseCliArguments(arguments_: readonly string[]): CliCommand {
   const [command, ...rest] = arguments_
 
@@ -274,10 +328,14 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
       return parseProjectReplaceCommand(projectArguments)
     }
 
+    if (subcommand === "delete") {
+      return parseProjectDeleteCommand(projectArguments)
+    }
+
     throw new CliUsageError(
       subcommand
         ? `Unknown project command: ${subcommand}`
-        : "project needs create, list, or replace"
+        : "project needs create, delete, list, or replace"
     )
   }
 
@@ -287,6 +345,10 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
 
   if (command === "replace") {
     return parseProjectReplaceCommand(rest)
+  }
+
+  if (command === "delete") {
+    return parseProjectDeleteCommand(rest)
   }
 
   throw new CliUsageError(`Unknown command: ${command}`)

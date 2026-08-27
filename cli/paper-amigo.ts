@@ -7,6 +7,7 @@ import { basename, resolve } from "node:path"
 import {
   CliRequestError,
   createProject,
+  deleteProject,
   discardUploads,
   doctor,
   findDuplicates,
@@ -38,11 +39,13 @@ Usage:
       [--concurrency <1-8>]
   paper-amigo project replace <project-id> <current-file-name-or-key>
       <replacement.pdf> [--json]
+  paper-amigo project delete <project-id> --confirm <project-title> [--json]
 
 Aliases:
   paper-amigo list
   paper-amigo upload <options for project create>
   paper-amigo replace <options for project replace>
+  paper-amigo delete <options for project delete>
 
 Run paper-amigo login again to update the saved email or password.
 `
@@ -484,6 +487,80 @@ async function runProjectReplace(
   return 0
 }
 
+async function runProjectDelete(
+  command: Extract<
+    ReturnType<typeof parseCliArguments>,
+    { kind: "project-delete" }
+  >
+): Promise<number> {
+  const configuration = await loadCliConfiguration(process.env)
+  const projects = await listProjects(configuration)
+  const project = projects.find(
+    (candidate) => candidate.id === command.projectId
+  )
+
+  if (!project) {
+    throw new CliUsageError(`Project ${command.projectId} was not found`)
+  }
+
+  if (command.confirmation !== project.title) {
+    throw new CliUsageError(
+      `Confirmation must exactly match ${JSON.stringify(project.title)}`
+    )
+  }
+
+  let deletion
+
+  try {
+    deletion = await deleteProject(
+      configuration,
+      project.id,
+      command.confirmation
+    )
+  } catch (error) {
+    if (!(error instanceof CliRequestError) || error.code !== "network-error") {
+      throw error
+    }
+
+    try {
+      deletion = await deleteProject(
+        configuration,
+        project.id,
+        command.confirmation
+      )
+    } catch (retryError) {
+      if (
+        retryError instanceof CliRequestError &&
+        retryError.code === "network-error"
+      ) {
+        throw new CliRequestError(
+          "Could not confirm deletion. Run project list before retrying",
+          "deletion-status-unknown"
+        )
+      }
+
+      throw retryError
+    }
+  }
+
+  const result = {
+    command: "project-delete" as const,
+    title: project.title,
+    ...deletion,
+  }
+
+  if (command.json) {
+    write(JSON.stringify(result, undefined, 2))
+  } else {
+    write(
+      `${deletion.deleted ? "deleted" : "already-deleted"}\t${project.title}`
+    )
+    write(`project\t${project.id}`)
+  }
+
+  return 0
+}
+
 async function main(): Promise<number> {
   const command = parseCliArguments(process.argv.slice(2))
 
@@ -498,6 +575,10 @@ async function main(): Promise<number> {
 
   if (command.kind === "project-replace") {
     return runProjectReplace(command)
+  }
+
+  if (command.kind === "project-delete") {
+    return runProjectDelete(command)
   }
 
   if (command.kind === "login") {

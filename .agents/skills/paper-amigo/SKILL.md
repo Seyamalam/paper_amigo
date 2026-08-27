@@ -1,6 +1,6 @@
 ---
 name: paper-amigo
-description: Create, list, and replace files in Paper Amigo research projects using the installed owner-authenticated CLI.
+description: Create, list, replace files in, and permanently delete Paper Amigo research projects using the installed owner-authenticated CLI.
 ---
 
 # Paper Amigo
@@ -78,3 +78,22 @@ Treat `replacement-status-unknown` specially: run `project list --json` and
 inspect the target project before retrying. A timed-out request may already have
 committed the replacement. Do not upload or delete files through UploadThing
 directly.
+
+## Delete a project
+
+Deletion is permanent. It removes the project's PDFs, every manifest revision,
+share links, views, and critiques. Only run deletion when the user explicitly
+requests removal of the identified project; a request to add or explain the
+capability is not authorization to delete live data.
+
+List projects first and use the returned title as the confirmation:
+
+```bash
+paper-amigo project list --json
+paper-amigo project delete <project-id> --confirm "Exact project title" --json
+```
+
+Do not weaken or infer the exact-title confirmation. Treat
+`deletion-status-unknown` specially: run `project list --json` and confirm the
+project is still present before retrying. Do not delete files or records through
+UploadThing directly.

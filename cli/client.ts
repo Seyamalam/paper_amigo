@@ -10,6 +10,7 @@ import {
 } from "../lib/ingestion-contract"
 import {
   createProjectInputSchema,
+  deleteProjectResponseSchema,
   projectSchema,
   replaceProjectFileResponseSchema,
   type CreateProjectInput,
@@ -263,6 +264,34 @@ export async function replaceProjectFile(
     }
   )
   const parsed = replaceProjectFileResponseSchema.safeParse(
+    await response.json().catch(() => undefined)
+  )
+
+  if (!parsed.success) {
+    throw new CliRequestError(
+      "Server returned an invalid response",
+      "invalid-response"
+    )
+  }
+
+  return parsed.data
+}
+
+export async function deleteProject(
+  configuration: CliConfiguration,
+  projectId: string,
+  confirmation: string
+) {
+  const response = await fetchAuthenticated(
+    configuration,
+    `/api/projects/${encodeURIComponent(projectId)}`,
+    {
+      body: JSON.stringify({ confirmation }),
+      headers: { "Content-Type": "application/json" },
+      method: "DELETE",
+    }
+  )
+  const parsed = deleteProjectResponseSchema.safeParse(
     await response.json().catch(() => undefined)
   )
 

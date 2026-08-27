@@ -26,6 +26,8 @@ profile URL are optional.
 - Roll back uploaded PDFs when project creation is incomplete.
 - Commit a replacement project manifest before deleting the prior PDF, and keep
   the replacement upload when deletion of the prior PDF fails.
+- Delete sharing records and project files before deleting every versioned
+  manifest so an interrupted project deletion can be retried.
 - Encrypt share-link, view, and critique records before placing them in
   public-read storage.
 
@@ -45,6 +47,7 @@ profile URL are optional.
 - List and search projects by title, description, or author.
 - Create projects with repeatable author fields and multi-PDF upload progress.
 - Open a project and switch between its PDF files.
+- Permanently delete a project only after its exact title is entered.
 
 ## CLI and skill
 
@@ -59,6 +62,7 @@ paper-amigo project create <path...> --title <title> --description <text> \
   --author "Name|Designation|University|ORCID|Profile URL"
 paper-amigo project replace <project-id> <current-file-name-or-key> \
   <replacement.pdf> [--json]
+paper-amigo project delete <project-id> --confirm <project-title> [--json]
 ```
 
 Project creation supports repeated `--author`, `--recursive`, `--dry-run`,
@@ -70,6 +74,10 @@ Project replacement accepts one local PDF and identifies the current project
 file by exact filename or storage key. It rejects duplicate content, preserves
 the file's project position, updates existing share links, and removes the prior
 PDF only after the replacement manifest is durable.
+
+Project deletion requires the exact current project title. It permanently
+removes attached PDFs, all project-manifest revisions, share links, views, and
+critiques. Retrying the authenticated API after a completed deletion is safe.
 
 ## Sharing and critiques
 

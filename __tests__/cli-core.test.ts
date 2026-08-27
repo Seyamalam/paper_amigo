@@ -121,6 +121,49 @@ describe("parseCliArguments", () => {
       parseCliArguments(["project", "replace", "project-id", "paper.pdf"])
     ).toThrow("project replace needs")
   })
+
+  it("parses confirmed project deletion", () => {
+    expect(
+      parseCliArguments([
+        "project",
+        "delete",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+        "--confirm",
+        "Study title",
+        "--json",
+      ])
+    ).toEqual({
+      kind: "project-delete",
+      confirmation: "Study title",
+      json: true,
+      projectId: "416d1b34-b331-4f18-8224-39f8a149908f",
+    })
+  })
+
+  it("requires a project deletion confirmation", () => {
+    expect(() =>
+      parseCliArguments([
+        "project",
+        "delete",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+      ])
+    ).toThrow("project delete needs --confirm")
+  })
+
+  it("accepts a project title that begins with a dash", () => {
+    expect(
+      parseCliArguments([
+        "delete",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+        "--confirm=-Study",
+      ])
+    ).toEqual({
+      kind: "project-delete",
+      confirmation: "-Study",
+      json: false,
+      projectId: "416d1b34-b331-4f18-8224-39f8a149908f",
+    })
+  })
 })
 
 describe("resolveProjectFile", () => {

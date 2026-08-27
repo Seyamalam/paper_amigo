@@ -42,6 +42,7 @@ export type SharedProject = Readonly<{
 }>
 
 const eventNamePrefix = "paper-amigo-event."
+const deletionBatchSize = 100
 const visitorWindowMilliseconds = 60_000
 const visitorCommentLimit = 3
 
@@ -313,4 +314,50 @@ export async function getCritiques(
         (fileKey === undefined || event.fileKey === fileKey)
     )
     .toSorted((left, right) => right.createdAt.localeCompare(left.createdAt))
+}
+
+export async function deleteProjectSharingRecords(
+  projectId: string
+): Promise<number> {
+  const uploadThing = getUploadThingApi()
+  const files = await listEventFiles()
+  const records = await Promise.all(
+    files.map(async (file) => ({
+      file,
+      record: await readEvent(uploadThing, file),
+    }))
+  )
+  const keys = records.flatMap(({ file, record }) =>
+    record?.projectId === projectId ? [file.key] : []
+  )
+
+  if (keys.length === 0) {
+    return 0
+  }
+
+  const batches = Array.from(
+    { length: Math.ceil(keys.length / deletionBatchSize) },
+    (_, index) =>
+      keys.slice(index * deletionBatchSize, (index + 1) * deletionBatchSize)
+  )
+  const deletions = await Promise.all(
+    batches.map(async (batch) => ({
+      batch,
+      result: await uploadThing.deleteFiles(batch),
+    }))
+  )
+
+  for (const deletion of deletions) {
+    if (
+      !deletion.result.success ||
+      deletion.result.deletedCount !== deletion.batch.length
+    ) {
+      throw new Error("Sharing record deletion was incomplete")
+    }
+  }
+
+  return deletions.reduce(
+    (total, deletion) => total + deletion.result.deletedCount,
+    0
+  )
 }
