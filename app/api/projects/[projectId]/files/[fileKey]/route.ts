@@ -32,7 +32,7 @@ export async function PUT(
   }
 
   if (!isProjectStorageConfigured()) {
-    return noStoreJson({ error: "UploadThing is not configured" }, 503)
+    return noStoreJson({ error: "Storage is not configured" }, 503)
   }
 
   const parameters = await context.params

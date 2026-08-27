@@ -33,7 +33,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   if (!isProjectStorageConfigured()) {
-    return noStoreJson({ error: "UploadThing is not configured" }, 503)
+    return noStoreJson({ error: "Storage is not configured" }, 503)
   }
 
   const library = await getProjectLibrary()
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   if (!isProjectStorageConfigured()) {
-    return noStoreJson({ error: "UploadThing is not configured" }, 503)
+    return noStoreJson({ error: "Storage is not configured" }, 503)
   }
 
   let body: unknown

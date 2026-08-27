@@ -1,5 +1,7 @@
 # Store project manifests in UploadThing
 
+Status: Superseded by ADR-0003
+
 Paper Amigo has no database, but projects need durable metadata and references to
 several PDFs. Store each project as a small versioned JSON manifest in
 UploadThing alongside its `public-read` PDF files, then delete the previous

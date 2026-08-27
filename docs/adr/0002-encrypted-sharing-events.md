@@ -1,5 +1,7 @@
 # Encrypt sharing events in public-read storage
 
+Status: Superseded by ADR-0003
+
 Paper Amigo stores share links, views, and critiques as append-only UploadThing
 objects because the product has no database and the selected storage tier is
 public-read. The server encrypts every record with a key derived from

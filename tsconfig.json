@@ -27,6 +27,7 @@
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "types": ["vite/client"],
     "plugins": [
       {
         "name": "next"

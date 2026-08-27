@@ -9,7 +9,8 @@ import {
 import { PageHeading } from "@/components/paper-amigo/page-heading"
 import { Badge } from "@/components/ui/badge"
 import { getAuthEnvironmentState } from "@/lib/auth-environment"
-import { isProjectStorageConfigured } from "@/lib/project-storage"
+import { isConvexConfigured } from "@/lib/convex-server"
+import { isUploadThingConfigured } from "@/lib/project-storage"
 
 type ProviderStatus = "Connected" | "Demo" | "Not connected"
 
@@ -19,10 +20,6 @@ type Provider = Readonly<{
   status: ProviderStatus
   variables: readonly string[]
 }>
-
-function isConfigured(variable: string): boolean {
-  return Boolean(process.env[variable]?.trim())
-}
 
 export default function SettingsPage() {
   const authState = getAuthEnvironmentState()
@@ -44,18 +41,15 @@ export default function SettingsPage() {
     },
     {
       name: "UploadThing",
-      purpose: "Private PDF bytes and short-lived signed access",
-      status: isProjectStorageConfigured() ? "Connected" : "Not connected",
+      purpose: "Public-read PDF files",
+      status: isUploadThingConfigured() ? "Connected" : "Not connected",
       variables: ["UPLOADTHING_TOKEN"],
     },
     {
-      name: "Managed KV",
-      purpose: "Share grants, view aggregates, and private critiques",
-      status:
-        isConfigured("KV_REST_API_URL") && isConfigured("KV_REST_API_TOKEN")
-          ? "Connected"
-          : "Not connected",
-      variables: ["KV_REST_API_URL", "KV_REST_API_TOKEN"],
+      name: "Convex",
+      purpose: "Projects, links, views, and critiques",
+      status: isConvexConfigured() ? "Connected" : "Not connected",
+      variables: ["CONVEX_URL"],
     },
     {
       name: "CLI ingestion",

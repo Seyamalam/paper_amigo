@@ -6,6 +6,24 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ## Unreleased
 
+## 0.5.0 (2026-08-27)
+
+### Features
+
+- Add Convex as the transactional store for projects, authors, PDF metadata,
+  share links, view analytics, unique visitors, and critiques.
+- Preserve existing project IDs, share tokens, analytics, critiques, and
+  UploadThing PDF keys through an idempotent migration.
+- Add bounded background cleanup for deleted project records.
+
+### Changed
+
+- Keep only public-read PDF bytes in UploadThing; structured data now lives in
+  Convex.
+- Add an authenticated server-to-server boundary between Next.js and Convex.
+- Add in-memory Convex tests for authorization, projects, analytics, critique
+  rate limits, and scheduled deletion.
+
 ## 0.4.0 (2026-08-27)
 
 ### Features

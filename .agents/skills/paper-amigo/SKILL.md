@@ -81,8 +81,8 @@ directly.
 
 ## Delete a project
 
-Deletion is permanent. It removes the project's PDFs, every manifest revision,
-share links, views, and critiques. Only run deletion when the user explicitly
+Deletion is permanent. It removes the project's PDFs, metadata, share links,
+views, and critiques. Only run deletion when the user explicitly
 requests removal of the identified project; a request to add or explain the
 capability is not authorization to delete live data.
 

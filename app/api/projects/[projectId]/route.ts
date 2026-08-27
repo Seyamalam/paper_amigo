@@ -11,10 +11,7 @@ import {
   deleteProjectInputSchema,
   type DeleteProjectResponse,
 } from "@/lib/projects"
-import {
-  deleteProjectSharingRecords,
-  isSharingStorageConfigured,
-} from "@/lib/sharing-storage"
+import { isSharingStorageConfigured } from "@/lib/sharing-storage"
 
 type DeleteProjectBody = Readonly<{ error: string }> | DeleteProjectResponse
 
@@ -68,12 +65,10 @@ export async function DELETE(
   }
 
   try {
-    const deletedSharingRecords = await deleteProjectSharingRecords(project.id)
     const storage = await deleteProjectStorage(project.id)
 
     return noStoreJson({
       deleted: true,
-      deletedSharingRecords,
       projectId: project.id,
       ...storage,
     })

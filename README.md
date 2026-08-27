@@ -17,6 +17,22 @@ bun run dev
 
 Open <http://localhost:3000>.
 
+In a second terminal, keep the personal Convex development deployment synced:
+
+```bash
+bunx convex dev
+```
+
+The first run creates or selects a Convex project and writes the development URL
+to the ignored `.env.local`. Set a matching local service credential with:
+
+```bash
+bunx convex env set PAPER_AMIGO_SERVICE_SECRET
+```
+
+Put that same value in `.env.local` as
+`PAPER_AMIGO_CONVEX_SERVICE_SECRET`.
+
 Without auth variables, local development opens in demo mode. To test owner
 sign-in locally, copy `.env.example` to `.env`, set the auth variables, and remove
 `PAPER_AMIGO_DEMO_MODE` or set it to `false`.
@@ -29,6 +45,8 @@ Set these as encrypted variables for the Production environment:
 BETTER_AUTH_SECRET
 PAPER_AMIGO_OWNER_EMAIL
 PAPER_AMIGO_OWNER_PASSWORD
+CONVEX_URL
+PAPER_AMIGO_CONVEX_SERVICE_SECRET
 UPLOADTHING_TOKEN
 ```
 
@@ -37,27 +55,30 @@ UPLOADTHING_TOKEN
 - Set `PAPER_AMIGO_OWNER_PASSWORD` to a unique password. The app accepts any
   non-empty value, but a password-manager-generated value with at least 12
   characters is recommended.
+- Set `CONVEX_URL` to the production deployment's `.convex.cloud` URL.
+- Generate one service credential with `openssl rand -hex 32`. Set the same
+  value as `PAPER_AMIGO_CONVEX_SERVICE_SECRET` in Vercel and as
+  `PAPER_AMIGO_SERVICE_SECRET` in the production Convex deployment.
 - Create an UploadThing app, enable ACL overrides, and copy its v7 token into
-  `UPLOADTHING_TOKEN`. PDFs and project manifests use `public-read` because the
-  free UploadThing tier does not provide private storage.
+  `UPLOADTHING_TOKEN`. PDFs use `public-read` because the free UploadThing tier
+  does not provide private storage.
 - Keep all of these server-only. Do not add a `NEXT_PUBLIC_` prefix.
 
-The managed KV variables will be added after its provider is selected. Vercel
-deployments fail closed when the auth configuration is missing or invalid;
+Vercel deployments fail closed when the auth configuration is missing or invalid;
 `PAPER_AMIGO_DEMO_MODE` only works outside Vercel.
 
 There is no signup or password-reset flow. Change the owner password in Vercel
-and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser.
-It also invalidates existing share links and makes their stored view and critique
-records unreadable.
+and redeploy to rotate it. Rotating `BETTER_AUTH_SECRET` signs out every browser
+and changes future anonymous-visitor hashes, but does not invalidate share links
+or stored critiques.
 The password remains in server environment configuration; browser sessions
 contain only the owner email in a seven-day encrypted JWE.
 
 One project has a title, description, one or more structured authors, and one to
 ten PDFs. Each author has a name, designation, university, and optional ORCID iD
-and profile URL. UploadThing stores a versioned JSON manifest beside the PDFs,
-so no application database is required. The browser calculates SHA-256 before
-upload and rejects duplicate content.
+and profile URL. Convex stores structured project metadata; UploadThing stores
+only PDF bytes. The browser calculates SHA-256 before upload and rejects duplicate
+content.
 
 Public-read URLs are unlisted but not access-controlled. Anyone with a PDF URL
 can open or download it; hiding download controls in the web UI is not DRM.
@@ -65,13 +86,14 @@ can open or download it; hiding download controls in the web UI is not DRM.
 The owner can create labeled secret links from a project page. Recipients open
 those links without signing in, switch between project PDFs, and leave a comment
 on a specific PDF with an optional page number. The app counts total opens and
-estimated unique browsers. It stores share links, views, and critiques as
-encrypted append-only UploadThing records. PDF pages render in an in-app canvas
-instead of depending on a browser PDF plugin.
+estimated unique browsers. Convex stores token hashes, view events, unique
+visitor hashes, and critiques; raw share tokens and raw visitor identifiers are
+never stored. PDF pages render in an in-app canvas instead of depending on a
+browser PDF plugin.
 
 The owner can permanently delete a project from its project page after typing
-the exact project title. Deletion removes attached PDFs, manifest revisions,
-share links, views, and critiques.
+the exact project title. Deletion removes attached PDFs, project metadata, share
+links, views, and critiques.
 
 ## CLI
 
@@ -124,8 +146,8 @@ produce a nonzero exit code.
 Use `paper-amigo project replace <project-id> <current-file-name-or-key>
 <replacement.pdf> --json` to replace exactly one project file. The selector may
 be an exact filename or the file key returned by `project list --json`. Existing
-share links immediately resolve the new project manifest. The previous PDF is
-removed only after that manifest is committed. The CLI never prints credentials.
+share links immediately resolve the new PDF metadata. The previous PDF is
+removed only after that metadata is committed. The CLI never prints credentials.
 
 Use `paper-amigo project delete <project-id> --confirm "Exact project title"
 --json` to permanently delete a project and its storage records. The exact title
@@ -134,6 +156,15 @@ confirmation is required in both interactive and automated use.
 The versioned agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and
 delegates file discovery, hashing, authentication, upload, and replacement work
 to the CLI. It also documents the confirmation rules for permanent deletion.
+Install it for supported agents through the skills CLI:
+
+```bash
+npx skills add https://github.com/Seyamalam/paper_amigo \
+  --skill paper-amigo --global --yes
+```
+
+The repository layout is directly discoverable by `skills.sh`; updates can be
+pulled with `npx skills update paper-amigo --global --yes`.
 
 ## Quality checks
 

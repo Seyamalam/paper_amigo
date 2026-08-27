@@ -28,6 +28,7 @@
     ".next/**",
     "build/**",
     "coverage/**",
+    "convex/_generated/**",
     "dist/**",
     "node_modules/**",
     "out/**",
@@ -43,6 +44,16 @@
     ".roo/**",
     ".windsurf/**",
     "tools/oxlint/anti-slop/**"
+  ],
+  "overrides": [
+    {
+      "files": ["convex/**/*.ts"],
+      "excludeFiles": ["convex/**/*.test.ts", "convex/_generated/**"],
+      "rules": {
+        "eslint/no-await-in-loop": "off",
+        "eslint/no-underscore-dangle": "off"
+      }
+    }
   ],
   "options": {
     "denyWarnings": true,

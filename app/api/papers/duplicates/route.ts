@@ -16,7 +16,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!isProjectStorageConfigured()) {
     return NextResponse.json(
-      { error: "UploadThing is not configured" },
+      { error: "Storage is not configured" },
       { status: 503 }
     )
   }

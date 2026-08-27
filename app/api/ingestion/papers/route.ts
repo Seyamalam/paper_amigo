@@ -16,7 +16,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   if (!isProjectStorageConfigured()) {
     return NextResponse.json(
-      { error: "UploadThing is not configured" },
+      { error: "Storage is not configured" },
       { headers: { "Cache-Control": "no-store" }, status: 503 }
     )
   }
