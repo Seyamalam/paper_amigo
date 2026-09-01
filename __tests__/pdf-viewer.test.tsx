@@ -31,6 +31,9 @@ describe("PdfViewer", () => {
     await screen.findByLabelText("PDF page 1")
     expect(container.querySelectorAll("canvas")).toHaveLength(3)
     expect(container.querySelector("object, iframe, embed")).toBeNull()
+    expect(
+      screen.getByRole("button", { name: "Download paper.pdf" })
+    ).not.toBeNull()
     unmount()
   })
 

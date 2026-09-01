@@ -27,6 +27,13 @@ describe("parseCliArguments", () => {
     expect(parseCliArguments(["logout"])).toEqual({ kind: "logout" })
   })
 
+  it("parses checkout updates", () => {
+    expect(parseCliArguments(["update"])).toEqual({ kind: "update" })
+    expect(() => parseCliArguments(["update", "--json"])).toThrow(
+      "Unknown option: --json"
+    )
+  })
+
   it("parses recursive project creation", () => {
     expect(
       parseCliArguments([
@@ -81,6 +88,40 @@ describe("parseCliArguments", () => {
         "9",
       ])
     ).toThrow(CliUsageError)
+  })
+
+  it("parses appending several files to an existing project", () => {
+    expect(
+      parseCliArguments([
+        "project",
+        "append",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+        "paper-four.pdf",
+        "appendices",
+        "--recursive",
+        "--dry-run",
+        "--json",
+        "--concurrency=5",
+      ])
+    ).toEqual({
+      kind: "project-append",
+      concurrency: 5,
+      dryRun: true,
+      json: true,
+      paths: ["paper-four.pdf", "appendices"],
+      projectId: "416d1b34-b331-4f18-8224-39f8a149908f",
+      recursive: true,
+    })
+  })
+
+  it("requires an append project and at least one path", () => {
+    expect(() =>
+      parseCliArguments([
+        "project",
+        "append",
+        "416d1b34-b331-4f18-8224-39f8a149908f",
+      ])
+    ).toThrow("project append needs")
   })
 
   it("parses authors without optional identifiers", () => {

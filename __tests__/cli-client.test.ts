@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
+  appendProjectFiles,
   CliRequestError,
   deleteProject,
   defaultPaperAmigoUrl,
@@ -135,6 +136,67 @@ describe("replaceProjectFile", () => {
     expect(new Headers(request?.headers).get("Authorization")).toBe(
       configuration.authorization
     )
+  })
+})
+
+describe("appendProjectFiles", () => {
+  it("posts new PDFs to the existing project", async () => {
+    const appendedFile = {
+      key: "paper-four-key",
+      hash: "d".repeat(64),
+      name: "paper-four.pdf",
+      size: 400,
+      url: "https://paper-amigo.ufs.sh/f/paper-four-key",
+    }
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        project: {
+          schemaVersion: 1,
+          id: "416d1b34-b331-4f18-8224-39f8a149908f",
+          title: "Study",
+          description: "Description",
+          authors: [
+            {
+              name: "Researcher",
+              designation: "Professor",
+              university: "University",
+            },
+          ],
+          files: [
+            {
+              ...appendedFile,
+              uploadedAt: "2026-08-27T10:00:00.000Z",
+            },
+          ],
+          createdAt: "2026-08-26T10:00:00.000Z",
+          updatedAt: "2026-08-27T10:00:01.000Z",
+        },
+      })
+    )
+    vi.stubGlobal("fetch", fetchMock)
+    const configuration = readCliConfiguration({}, storedCredentials)
+
+    const result = await appendProjectFiles(
+      configuration,
+      "416d1b34-b331-4f18-8224-39f8a149908f",
+      { files: [appendedFile] }
+    )
+
+    expect(result.files[0]?.key).toBe("paper-four-key")
+    const firstCall = fetchMock.mock.calls[0]
+    expect(firstCall).toBeDefined()
+
+    if (!firstCall) throw new Error("Append request was not sent")
+    const [requestUrl, request] = firstCall
+
+    expect(requestUrl).toBeInstanceOf(URL)
+    if (!(requestUrl instanceof URL)) {
+      throw new Error("Append URL was not normalized")
+    }
+    expect(requestUrl.pathname).toBe(
+      "/api/projects/416d1b34-b331-4f18-8224-39f8a149908f/files"
+    )
+    expect(request?.method).toBe("POST")
   })
 })
 

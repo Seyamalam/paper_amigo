@@ -19,8 +19,8 @@ profile URL are optional.
 - Store PDF bytes only in UploadThing.
 - Use `public-read` because the selected free tier does not support private
   storage.
-- Treat public URLs as unlisted, not private. The product does not display a
-  download action but cannot prevent saving a publicly readable PDF.
+- Treat public URLs as unlisted, not private. The PDF viewer provides an
+  explicit download action for the publicly readable file.
 - Preserve original PDF filenames and validate every PDF file reference
   against UploadThing before creating a project.
 - Calculate a SHA-256 hash before upload and reject duplicate PDF content.
@@ -56,10 +56,12 @@ Required commands:
 ```text
 paper-amigo login
 paper-amigo logout
+paper-amigo update
 paper-amigo doctor [--json]
 paper-amigo project list [--json]
 paper-amigo project create <path...> --title <title> --description <text> \
   --author "Name|Designation|University|ORCID|Profile URL"
+paper-amigo project append <project-id> <path...> [--recursive] [--json]
 paper-amigo project replace <project-id> <current-file-name-or-key> \
   <replacement.pdf> [--json]
 paper-amigo project delete <project-id> --confirm <project-title> [--json]
@@ -69,6 +71,15 @@ Project creation supports repeated `--author`, `--recursive`, `--dry-run`,
 `--json`, and `--concurrency <1-8>`. It accepts relative or absolute files and
 directories from any working directory. The agent skill calls the CLI rather
 than reimplementing storage or authentication.
+
+CLI update discovers the linked Paper Amigo checkout, refuses to overwrite
+tracked local changes, pulls with `--ff-only`, and refreshes dependencies from
+the lockfile.
+
+Project append accepts files and directories, uses the same discovery and
+upload controls as creation, and adds PDFs to an existing project up to the
+ten-file project limit. Its default concurrency of three controls simultaneous
+uploads, not the total number of appended files.
 
 Project replacement accepts one local PDF and identifies the current project
 file by exact filename or storage key. It rejects duplicate content, preserves

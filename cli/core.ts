@@ -9,6 +9,16 @@ export type CliCommand =
   | Readonly<{ kind: "login" }>
   | Readonly<{ kind: "list"; json: boolean }>
   | Readonly<{ kind: "logout" }>
+  | Readonly<{ kind: "update" }>
+  | Readonly<{
+      kind: "project-append"
+      concurrency: number
+      dryRun: boolean
+      json: boolean
+      paths: readonly string[]
+      projectId: string
+      recursive: boolean
+    }>
   | Readonly<{
       kind: "project-create"
       authors: readonly ProjectAuthor[]
@@ -82,7 +92,7 @@ function parseSimpleCommand(
 }
 
 function parseInteractiveCommand(
-  kind: "login" | "logout",
+  kind: "login" | "logout" | "update",
   arguments_: readonly string[]
 ): CliCommand {
   if (arguments_.length === 0) {
@@ -227,6 +237,55 @@ function parseProjectCreateCommand(arguments_: readonly string[]): CliCommand {
   }
 }
 
+function parseProjectAppendCommand(arguments_: readonly string[]): CliCommand {
+  const operands: string[] = []
+  let concurrency = 3
+  let dryRun = false
+  let json = false
+  let recursive = false
+
+  for (let index = 0; index < arguments_.length; index += 1) {
+    const argument = arguments_[index]
+
+    if (argument === "--recursive" || argument === "-r") {
+      recursive = true
+    } else if (argument === "--dry-run") {
+      dryRun = true
+    } else if (argument === "--json") {
+      json = true
+    } else if (argument === "--help" || argument === "-h") {
+      return { kind: "help" }
+    } else if (argument === "--concurrency") {
+      concurrency = parseConcurrency(arguments_[index + 1])
+      index += 1
+    } else if (argument?.startsWith("--concurrency=")) {
+      concurrency = parseConcurrency(argument.slice("--concurrency=".length))
+    } else if (argument?.startsWith("-")) {
+      throw new CliUsageError(`Unknown option: ${argument}`)
+    } else if (argument) {
+      operands.push(argument)
+    }
+  }
+
+  const [projectId, ...paths] = operands
+
+  if (!projectId || paths.length === 0) {
+    throw new CliUsageError(
+      "project append needs <project-id> and at least one file or directory"
+    )
+  }
+
+  return {
+    kind: "project-append",
+    concurrency,
+    dryRun,
+    json,
+    paths,
+    projectId,
+    recursive,
+  }
+}
+
 function parseProjectReplaceCommand(arguments_: readonly string[]): CliCommand {
   const operands: string[] = []
   let json = false
@@ -309,7 +368,7 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
     return parseSimpleCommand(command, rest)
   }
 
-  if (command === "login" || command === "logout") {
+  if (command === "login" || command === "logout" || command === "update") {
     return parseInteractiveCommand(command, rest)
   }
 
@@ -318,6 +377,10 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
 
     if (subcommand === "create") {
       return parseProjectCreateCommand(projectArguments)
+    }
+
+    if (subcommand === "append") {
+      return parseProjectAppendCommand(projectArguments)
     }
 
     if (subcommand === "list") {
@@ -335,12 +398,16 @@ export function parseCliArguments(arguments_: readonly string[]): CliCommand {
     throw new CliUsageError(
       subcommand
         ? `Unknown project command: ${subcommand}`
-        : "project needs create, delete, list, or replace"
+        : "project needs append, create, delete, list, or replace"
     )
   }
 
   if (command === "upload") {
     return parseProjectCreateCommand(rest)
+  }
+
+  if (command === "append") {
+    return parseProjectAppendCommand(rest)
   }
 
   if (command === "replace") {

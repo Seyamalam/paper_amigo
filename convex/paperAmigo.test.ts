@@ -68,6 +68,41 @@ describe("Paper Amigo Convex data layer", () => {
     ).resolves.toEqual([paperFile.hash])
   })
 
+  test("appends files beyond the initial three-file batch", async () => {
+    const t = await seeded()
+    const files = ["b", "c", "d"].map((hashCharacter, index) => ({
+      key: `paper-${String(index + 2)}-key`,
+      hash: hashCharacter.repeat(64),
+      name: `paper-${String(index + 2)}.pdf`,
+      size: (index + 2) * 1024,
+      uploadedAt: `2026-08-27T00:0${String(index + 1)}:00.000Z`,
+      url: `https://example.ufs.sh/f/paper-${String(index + 2)}-key`,
+    }))
+
+    const appended = await t.mutation(api.projects.appendFiles, {
+      serviceSecret,
+      projectId: project.id,
+      files,
+      updatedAt: "2026-08-27T00:10:00.000Z",
+    })
+
+    expect(appended.files.map((file) => file.key)).toEqual([
+      "paper-key",
+      "paper-2-key",
+      "paper-3-key",
+      "paper-4-key",
+    ])
+
+    await expect(
+      t.mutation(api.projects.appendFiles, {
+        serviceSecret,
+        projectId: project.id,
+        files,
+        updatedAt: "2026-08-27T00:10:00.000Z",
+      })
+    ).resolves.toEqual(appended)
+  })
+
   test("tracks total and unique share views", async () => {
     const t = await seeded()
     const record = {

@@ -111,6 +111,7 @@ bun run cli project create ./research --recursive \
   --title "Project title" \
   --description "Project description" \
   --author "Name|Designation|University|ORCID|Profile URL"
+bun run cli project append <project-id> ./more-papers --recursive --json
 bun run cli project replace <project-id> <current-file-name-or-key> \
   ./revised.pdf --json
 bun run cli project delete <project-id> --confirm "Exact project title" --json
@@ -122,7 +123,13 @@ Install the `paper-amigo` command from this checkout with `bun link`:
 bun link
 paper-amigo login
 paper-amigo doctor
+paper-amigo update
 ```
+
+`paper-amigo update` fast-forwards the linked checkout and refreshes its locked
+dependencies. It refuses to update when tracked files have local changes, so
+commit or stash those changes first. The command requires the documented
+checkout-based `bun link` installation.
 
 The email prompt reuses the saved address when one exists. The password prompt
 comes from macOS Keychain and does not echo the password. Use
@@ -143,6 +150,11 @@ and `--concurrency <1-8>`. The older `list` and `upload` names remain aliases.
 Directory scans ignore non-PDF files. Explicit non-PDF paths and failed uploads
 produce a nonzero exit code.
 
+Use `paper-amigo project append <project-id> <path...> --json` to add PDFs to
+an existing project, up to the ten-file project limit. It accepts `--dry-run`,
+`--recursive`, and `--concurrency <1-8>`; the default concurrency of three is
+only the number of simultaneous uploads, not a three-file cap.
+
 Use `paper-amigo project replace <project-id> <current-file-name-or-key>
 <replacement.pdf> --json` to replace exactly one project file. The selector may
 be an exact filename or the file key returned by `project list --json`. Existing
@@ -154,7 +166,7 @@ Use `paper-amigo project delete <project-id> --confirm "Exact project title"
 confirmation is required in both interactive and automated use.
 
 The versioned agent skill is stored at `.agents/skills/paper-amigo/SKILL.md` and
-delegates file discovery, hashing, authentication, upload, and replacement work
+delegates file discovery, hashing, authentication, append, upload, and replacement work
 to the CLI. It also documents the confirmation rules for permanent deletion.
 Install it for supported agents through the skills CLI:
 

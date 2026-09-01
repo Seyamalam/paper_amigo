@@ -11,9 +11,12 @@ import {
 } from "@/lib/convex-server"
 import { projectFileHashFromCustomId } from "@/lib/project-file-identity"
 import {
+  appendProjectFilesInputSchema,
   createProjectInputSchema,
+  maxProjectFiles,
   projectSchema,
   replaceProjectFileInputSchema,
+  type AppendProjectFilesInput,
   type CreateProjectInput,
   type Project,
   type ReplaceProjectFileInput,
@@ -237,6 +240,84 @@ export async function createProject(
     if (
       committed?.files.length === project.files.length &&
       committed.files.every((file) => expectedKeys.has(file.key))
+    ) {
+      return committed
+    }
+
+    await Promise.all(verifiedFiles.map((file) => safelyDeleteFile(file.key)))
+    throw error
+  }
+}
+
+export async function appendProjectFiles(
+  projectId: string,
+  rawInput: AppendProjectFilesInput
+): Promise<Project> {
+  const input = appendProjectFilesInputSchema.parse(rawInput)
+  const storedFiles = await listStoredFiles()
+  const verifiedFiles = verifyUploadedFiles(input.files, storedFiles)
+  const project = await getProject(projectId)
+
+  if (!project) {
+    await Promise.all(verifiedFiles.map((file) => safelyDeleteFile(file.key)))
+    throw new Error("Project not found")
+  }
+
+  const expectedHashes = new Map(
+    input.files.map((file) => [file.key, file.hash])
+  )
+  const alreadyAppended = [...expectedHashes].every(([key, hash]) =>
+    project.files.some((file) => file.key === key && file.hash === hash)
+  )
+
+  if (alreadyAppended) {
+    return project
+  }
+
+  if (project.files.length + input.files.length > maxProjectFiles) {
+    await Promise.all(verifiedFiles.map((file) => safelyDeleteFile(file.key)))
+    throw new Error(
+      `A project can contain at most ${String(maxProjectFiles)} PDFs`
+    )
+  }
+
+  const storedByKey = new Map(verifiedFiles.map((file) => [file.key, file]))
+
+  try {
+    const updated = await getConvexClient().mutation(
+      convexApi.projects.appendFiles,
+      {
+        ...serviceArgs(),
+        projectId,
+        files: input.files.map((file) => {
+          const stored = storedByKey.get(file.key)
+          if (!stored) throw new Error("Uploaded PDF could not be verified")
+          return {
+            hash: file.hash,
+            key: file.key,
+            name: file.name,
+            size: file.size,
+            uploadedAt: timestampToIso(stored.uploadedAt),
+            url: file.url,
+          }
+        }),
+        updatedAt: nextProjectTimestamp(project.updatedAt),
+      }
+    )
+    return projectSchema.parse(updated)
+  } catch (error) {
+    let committed: Project | undefined
+    try {
+      committed = await getProject(projectId)
+    } catch {
+      throw error
+    }
+
+    if (
+      committed &&
+      [...expectedHashes].every(([key, hash]) =>
+        committed.files.some((file) => file.key === key && file.hash === hash)
+      )
     ) {
       return committed
     }

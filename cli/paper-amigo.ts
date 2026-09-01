@@ -3,8 +3,10 @@
 import { createHash, randomUUID } from "node:crypto"
 import { readFile, stat } from "node:fs/promises"
 import { basename, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import {
+  appendProjectFiles,
   CliRequestError,
   createProject,
   deleteProject,
@@ -25,18 +27,23 @@ import {
   type DiscoveryFailure,
 } from "./core"
 import { getPdfValidationError, maxPdfBatchSize } from "../lib/paper-upload"
+import { maxProjectFiles } from "../lib/projects"
+import { CliUpdateError, findCliCheckout, updateCliCheckout } from "./updater"
 
 const helpText = `paper-amigo
 
 Usage:
   paper-amigo login
   paper-amigo logout
+  paper-amigo update
   paper-amigo doctor [--json]
   paper-amigo project list [--json]
   paper-amigo project create <path...> --title <title> --description <text>
       --author "Name|Designation|University|ORCID|Profile URL"
       [--author <author>...] [--recursive] [--dry-run] [--json]
       [--concurrency <1-8>]
+  paper-amigo project append <project-id> <path...>
+      [--recursive] [--dry-run] [--json] [--concurrency <1-8>]
   paper-amigo project replace <project-id> <current-file-name-or-key>
       <replacement.pdf> [--json]
   paper-amigo project delete <project-id> --confirm <project-title> [--json]
@@ -44,6 +51,7 @@ Usage:
 Aliases:
   paper-amigo list
   paper-amigo upload <options for project create>
+  paper-amigo append <options for project append>
   paper-amigo replace <options for project replace>
   paper-amigo delete <options for project delete>
 
@@ -376,6 +384,218 @@ async function runProjectCreate(
   return projectId ? 0 : 1
 }
 
+async function runProjectAppend(
+  command: Extract<
+    ReturnType<typeof parseCliArguments>,
+    { kind: "project-append" }
+  >
+): Promise<number> {
+  const configuration = await loadCliConfiguration(process.env)
+  const projects = await listProjects(configuration)
+  const project = projects.find(
+    (candidate) => candidate.id === command.projectId
+  )
+
+  if (!project) {
+    throw new CliUsageError(`Project ${command.projectId} was not found`)
+  }
+
+  const discovery = await discoverPdfPaths(command.paths, command.recursive)
+  const prepared = await mapWithConcurrency(
+    discovery.paths,
+    command.concurrency,
+    prepareCandidate
+  )
+  const failed: UploadIssue[] = [
+    ...discovery.failed.map(issueFromDiscovery),
+    ...prepared.filter(isUploadIssue),
+  ]
+  const selection = splitSelectionDuplicates(prepared.filter(isUploadCandidate))
+
+  if (selection.candidates.length === 0 && failed.length === 0) {
+    failed.push({
+      code: "no-pdfs",
+      path: command.paths.join(", "),
+      reason: "No PDF files were found",
+    })
+  }
+
+  const duplicateHashes = new Set<string>()
+  const duplicateBatches = await Promise.all(
+    chunks(
+      selection.candidates.map((candidate) => candidate.hash),
+      maxPdfBatchSize
+    ).map((batch) => findDuplicates(configuration, batch))
+  )
+
+  for (const duplicates of duplicateBatches) {
+    for (const hash of duplicates) duplicateHashes.add(hash)
+  }
+
+  const skipped: UploadIssue[] = [...selection.skipped]
+  const pending: UploadCandidate[] = []
+
+  for (const candidate of selection.candidates) {
+    if (duplicateHashes.has(candidate.hash)) {
+      skipped.push({
+        code: "already-uploaded",
+        path: candidate.path,
+        reason: "PDF is already attached to a project",
+      })
+    } else {
+      pending.push(candidate)
+    }
+  }
+
+  const availableSlots = maxProjectFiles - project.files.length
+
+  if (pending.length > availableSlots) {
+    failed.push({
+      code: "project-file-limit",
+      path: project.title,
+      reason: `Project can accept ${String(availableSlots)} more PDFs (${String(maxProjectFiles)} maximum)`,
+    })
+  }
+
+  if (skipped.some((issue) => issue.code === "already-uploaded")) {
+    failed.push({
+      code: "project-incomplete",
+      path: project.title,
+      reason: "A project cannot reuse a PDF already attached elsewhere",
+    })
+  }
+
+  if (command.dryRun || failed.length > 0) {
+    const result = {
+      command: "project-append" as const,
+      dryRun: command.dryRun,
+      ready: failed.length === 0 ? pending : [],
+      uploaded: [],
+      skipped,
+      failed,
+      projectId: project.id,
+    }
+
+    if (command.json) {
+      write(JSON.stringify(result, undefined, 2))
+    } else {
+      printProjectResult(result)
+    }
+
+    return failed.length > 0 ? 1 : 0
+  }
+
+  const uploadAttempts = await mapWithConcurrency(
+    pending,
+    command.concurrency,
+    async (candidate): Promise<UploadedResult | UploadIssue> => {
+      try {
+        const bytes = await readFile(candidate.path)
+        const file = new File([bytes], candidate.name, {
+          lastModified: candidate.lastModified,
+          type: "application/pdf",
+        })
+        const uploaded = await uploadPdf(configuration, file, candidate.hash)
+        return { ...uploaded, path: candidate.path }
+      } catch (error) {
+        return {
+          code: error instanceof CliRequestError ? error.code : "upload-failed",
+          path: candidate.path,
+          reason: error instanceof Error ? error.message : "PDF upload failed",
+        }
+      }
+    }
+  )
+  const uploaded = uploadAttempts.filter(
+    (attempt): attempt is UploadedResult => "key" in attempt
+  )
+  failed.push(
+    ...uploadAttempts.filter(
+      (attempt): attempt is UploadIssue => !("key" in attempt)
+    )
+  )
+
+  if (failed.length > 0) {
+    if (uploaded.length > 0) {
+      await discardUploads(
+        configuration,
+        uploaded.map(({ hash, key, name, size, url }) => ({
+          hash,
+          key,
+          name,
+          size,
+          url,
+        }))
+      )
+    }
+
+    const result = {
+      command: "project-append" as const,
+      dryRun: false as const,
+      ready: [],
+      uploaded: [],
+      skipped,
+      failed,
+      projectId: project.id,
+    }
+
+    if (command.json) {
+      write(JSON.stringify(result, undefined, 2))
+    } else {
+      printProjectResult(result)
+    }
+    return 1
+  }
+
+  const files = uploaded.map(({ hash, key, name, size, url }) => ({
+    hash,
+    key,
+    name,
+    size,
+    url,
+  }))
+
+  try {
+    await appendProjectFiles(configuration, project.id, { files })
+  } catch (error) {
+    if (!(error instanceof CliRequestError) || error.code !== "network-error") {
+      throw error
+    }
+
+    try {
+      await appendProjectFiles(configuration, project.id, { files })
+    } catch (retryError) {
+      if (
+        retryError instanceof CliRequestError &&
+        retryError.code === "network-error"
+      ) {
+        throw new CliRequestError(
+          "Could not confirm the append. Run project list before retrying",
+          "append-status-unknown"
+        )
+      }
+      throw retryError
+    }
+  }
+
+  const result = {
+    command: "project-append" as const,
+    dryRun: false as const,
+    ready: [],
+    uploaded,
+    skipped,
+    failed,
+    projectId: project.id,
+  }
+
+  if (command.json) {
+    write(JSON.stringify(result, undefined, 2))
+  } else {
+    printProjectResult(result)
+  }
+  return 0
+}
+
 async function runProjectReplace(
   command: Extract<
     ReturnType<typeof parseCliArguments>,
@@ -573,6 +793,10 @@ async function main(): Promise<number> {
     return runProjectCreate(command)
   }
 
+  if (command.kind === "project-append") {
+    return runProjectAppend(command)
+  }
+
   if (command.kind === "project-replace") {
     return runProjectReplace(command)
   }
@@ -595,6 +819,34 @@ async function main(): Promise<number> {
   if (command.kind === "logout") {
     await clearLogin(process.env)
     write("Saved login removed")
+    return 0
+  }
+
+  if (command.kind === "update") {
+    const checkout = await findCliCheckout(
+      [
+        process.argv[1],
+        fileURLToPath(import.meta.url),
+        process.execPath,
+      ].filter((candidate): candidate is string => Boolean(candidate))
+    )
+
+    if (!checkout) {
+      throw new CliUpdateError(
+        "This installation is not linked to a Paper Amigo checkout. Install from a checkout with `bun link`."
+      )
+    }
+
+    const result = await updateCliCheckout(checkout)
+
+    if (result.beforeRevision === result.afterRevision) {
+      write(`Paper Amigo is already up to date (${result.afterRevision}).`)
+    } else {
+      write(
+        `Updated Paper Amigo from ${result.beforeRevision} to ${result.afterRevision}.`
+      )
+    }
+
     return 0
   }
 
@@ -647,6 +899,9 @@ try {
   } else if (error instanceof CliRequestError) {
     writeFatalError(error.code, error.message)
     process.exitCode = 2
+  } else if (error instanceof CliUpdateError) {
+    writeFatalError("update-error", error.message)
+    process.exitCode = 1
   } else {
     writeFatalError(
       "unexpected-error",

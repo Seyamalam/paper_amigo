@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   FileWarning,
   LoaderCircle,
   Maximize2,
@@ -268,6 +269,7 @@ export function PdfViewer({
   const [viewer, setViewer] = useState<ViewerState>({ kind: "loading" })
   const [fitMode, setFitMode] = useState<FitMode>("page")
   const [isExpanded, setIsExpanded] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [viewerSize, setViewerSize] = useState<PdfPageSize>(fallbackPageSize)
 
   useEffect(() => {
@@ -351,6 +353,29 @@ export function PdfViewer({
   }, [isExpanded])
 
   const pageCount = viewer.kind === "ready" ? viewer.document.numPages : 0
+
+  async function downloadPdf(): Promise<void> {
+    setDownloading(true)
+
+    try {
+      const response = await fetch(url)
+      if (!response.ok) throw new Error("PDF download failed")
+      const objectUrl = URL.createObjectURL(await response.blob())
+      const link = document.createElement("a")
+      link.href = objectUrl
+      link.download = name
+      link.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch {
+      const fallbackLink = document.createElement("a")
+      fallbackLink.href = url
+      fallbackLink.target = "_blank"
+      fallbackLink.rel = "noreferrer"
+      fallbackLink.click()
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const scrollToPage = useCallback((nextPage: number): void => {
     const pageContainer = pageContainerRef.current
@@ -485,6 +510,23 @@ export function PdfViewer({
         ) : null}
 
         <div className="ml-auto flex shrink-0 items-center gap-1 border-l pl-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label={`Download ${name}`}
+            disabled={downloading}
+            onClick={() => {
+              void downloadPdf()
+            }}
+          >
+            {downloading ? (
+              <LoaderCircle aria-hidden="true" className="animate-spin" />
+            ) : (
+              <Download aria-hidden="true" />
+            )}
+            <span className="hidden xl:inline">Download</span>
+          </Button>
           <Button
             type="button"
             variant="ghost"

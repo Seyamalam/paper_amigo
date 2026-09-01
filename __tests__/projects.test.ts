@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  appendProjectFilesInputSchema,
   createProjectInputSchema,
   deleteProjectInputSchema,
   projectAuthorSchema,
+  withAppendedProjectFiles,
   withReplacedProjectFile,
   type Project,
 } from "@/lib/projects"
@@ -130,5 +132,73 @@ describe("project schemas", () => {
     ])
     expect(replaced.createdAt).toBe(project.createdAt)
     expect(replaced.updatedAt).toBe("2026-08-27T10:00:01.000Z")
+  })
+
+  it("appends project files after the existing file slots", () => {
+    const project: Project = {
+      schemaVersion: 1,
+      id: "416d1b34-b331-4f18-8224-39f8a149908f",
+      title: "Study",
+      description: "Description",
+      authors: [
+        {
+          name: "Researcher",
+          designation: "Professor",
+          university: "University",
+        },
+      ],
+      files: [
+        {
+          key: "paper-one",
+          hash: "a".repeat(64),
+          name: "paper-one.pdf",
+          size: 100,
+          uploadedAt: "2026-08-26T10:00:00.000Z",
+          url: "https://paper-amigo.ufs.sh/f/paper-one",
+        },
+      ],
+      createdAt: "2026-08-26T10:00:00.000Z",
+      updatedAt: "2026-08-26T10:00:00.000Z",
+    }
+    const files = [
+      {
+        key: "paper-two",
+        hash: "b".repeat(64),
+        name: "paper-two.pdf",
+        size: 200,
+        url: "https://paper-amigo.ufs.sh/f/paper-two",
+      },
+      {
+        key: "paper-three",
+        hash: "c".repeat(64),
+        name: "paper-three.pdf",
+        size: 300,
+        url: "https://paper-amigo.ufs.sh/f/paper-three",
+      },
+      {
+        key: "paper-four",
+        hash: "d".repeat(64),
+        name: "paper-four.pdf",
+        size: 400,
+        url: "https://paper-amigo.ufs.sh/f/paper-four",
+      },
+    ]
+
+    expect(appendProjectFilesInputSchema.safeParse({ files }).success).toBe(
+      true
+    )
+    const appended = withAppendedProjectFiles(
+      project,
+      files,
+      new Map(files.map((file) => [file.key, "2026-08-27T10:00:00.000Z"])),
+      "2026-08-27T10:00:01.000Z"
+    )
+
+    expect(appended.files.map((file) => file.key)).toEqual([
+      "paper-one",
+      "paper-two",
+      "paper-three",
+      "paper-four",
+    ])
   })
 })

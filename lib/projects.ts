@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+export const maxProjectFiles = 10
+
 const requiredText = (label: string, maximum: number) =>
   z
     .string()
@@ -38,7 +40,11 @@ export const createProjectInputSchema = z.object({
   title: requiredText("Title", 240),
   description: requiredText("Description", 10_000),
   authors: z.array(projectAuthorSchema).min(1).max(50),
-  files: z.array(uploadedProjectFileSchema).min(1).max(10),
+  files: z.array(uploadedProjectFileSchema).min(1).max(maxProjectFiles),
+})
+
+export const appendProjectFilesInputSchema = z.object({
+  files: z.array(uploadedProjectFileSchema).min(1).max(maxProjectFiles),
 })
 
 export const replaceProjectFileInputSchema = z.object({
@@ -53,7 +59,7 @@ export const projectSchema = createProjectInputSchema
   .omit({ files: true })
   .extend({
     schemaVersion: z.literal(1),
-    files: z.array(projectFileSchema).min(1).max(10),
+    files: z.array(projectFileSchema).min(1).max(maxProjectFiles),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
   })
@@ -65,6 +71,10 @@ export const projectsResponseSchema = z.object({
 export const replaceProjectFileResponseSchema = z.object({
   project: projectSchema,
   previousFileDeleted: z.boolean(),
+})
+
+export const appendProjectFilesResponseSchema = z.object({
+  project: projectSchema,
 })
 
 export const deleteProjectResponseSchema = z.object({
@@ -95,10 +105,35 @@ export function withReplacedProjectFile(
   })
 }
 
+export function withAppendedProjectFiles(
+  project: Project,
+  files: readonly UploadedProjectFile[],
+  uploadedAtByKey: ReadonlyMap<string, string>,
+  updatedAt: string
+): Project {
+  return projectSchema.parse({
+    ...project,
+    files: [
+      ...project.files,
+      ...files.map((file) => ({
+        ...file,
+        uploadedAt: uploadedAtByKey.get(file.key),
+      })),
+    ],
+    updatedAt,
+  })
+}
+
 export type ProjectAuthor = z.infer<typeof projectAuthorSchema>
 export type ProjectFile = z.infer<typeof projectFileSchema>
 export type UploadedProjectFile = z.infer<typeof uploadedProjectFileSchema>
 export type CreateProjectInput = z.infer<typeof createProjectInputSchema>
+export type AppendProjectFilesInput = z.infer<
+  typeof appendProjectFilesInputSchema
+>
+export type AppendProjectFilesResponse = z.infer<
+  typeof appendProjectFilesResponseSchema
+>
 export type ReplaceProjectFileInput = z.infer<
   typeof replaceProjectFileInputSchema
 >

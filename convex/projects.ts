@@ -112,6 +112,12 @@ function assertProjectLimits(
     throw new Error("A project must have between 1 and 50 authors")
   }
 
+  assertFileLimits(files)
+}
+
+function assertFileLimits(
+  files: readonly { key: string; hash: string }[]
+): void {
   if (files.length < 1 || files.length > 10) {
     throw new Error("A project must have between 1 and 10 PDF files")
   }
@@ -257,6 +263,61 @@ export const create = mutation({
     await insertProjectChildren(ctx, projectId, args.project)
 
     return args.project
+  },
+})
+
+export const appendFiles = mutation({
+  args: {
+    serviceSecret: v.string(),
+    projectId: v.string(),
+    files: v.array(projectFileValidator),
+    updatedAt: v.string(),
+  },
+  returns: projectValidator,
+  handler: async (ctx, args) => {
+    assertServiceSecret(args.serviceSecret)
+    assertFileLimits(args.files)
+    const project = await projectByExternalId(ctx, args.projectId)
+
+    if (project?.status !== "active") {
+      throw new Error("Project not found")
+    }
+
+    const existingFiles = await ctx.db
+      .query("projectFiles")
+      .withIndex("by_project_id_and_position", (index) =>
+        index.eq("projectId", project._id)
+      )
+      .take(10)
+    const existingByKey = new Map(existingFiles.map((file) => [file.key, file]))
+    const alreadyAppended = args.files.every((file) => {
+      const existing = existingByKey.get(file.key)
+      return existing?.projectId === project._id && existing.hash === file.hash
+    })
+
+    if (alreadyAppended) {
+      return readProject(ctx, project)
+    }
+
+    assertFileLimits([...existingFiles, ...args.files])
+    await assertFilesAreAvailable(ctx, args.files)
+
+    for (const [index, file] of args.files.entries()) {
+      await ctx.db.insert("projectFiles", {
+        projectId: project._id,
+        position: existingFiles.length + index,
+        ...file,
+      })
+    }
+
+    await ctx.db.patch(project._id, { updatedAt: args.updatedAt })
+    const updated = await ctx.db.get(project._id)
+
+    if (!updated) {
+      throw new Error("Project not found")
+    }
+
+    return readProject(ctx, updated)
   },
 })
 

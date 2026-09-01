@@ -9,10 +9,13 @@ import {
   ingestionProjectsResponseSchema,
 } from "../lib/ingestion-contract"
 import {
+  appendProjectFilesInputSchema,
+  appendProjectFilesResponseSchema,
   createProjectInputSchema,
   deleteProjectResponseSchema,
   projectSchema,
   replaceProjectFileResponseSchema,
+  type AppendProjectFilesInput,
   type CreateProjectInput,
   type ReplaceProjectFileInput,
   type UploadedProjectFile,
@@ -235,6 +238,35 @@ export async function createProject(
     method: "POST",
   })
   const parsed = createProjectResponseSchema.safeParse(
+    await response.json().catch(() => undefined)
+  )
+
+  if (!parsed.success) {
+    throw new CliRequestError(
+      "Server returned an invalid response",
+      "invalid-response"
+    )
+  }
+
+  return parsed.data.project
+}
+
+export async function appendProjectFiles(
+  configuration: CliConfiguration,
+  projectId: string,
+  input: AppendProjectFilesInput
+) {
+  const validated = appendProjectFilesInputSchema.parse(input)
+  const response = await fetchAuthenticated(
+    configuration,
+    `/api/projects/${encodeURIComponent(projectId)}/files`,
+    {
+      body: JSON.stringify(validated),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }
+  )
+  const parsed = appendProjectFilesResponseSchema.safeParse(
     await response.json().catch(() => undefined)
   )
 

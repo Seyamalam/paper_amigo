@@ -6,6 +6,13 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ## Unreleased
 
+### Features
+
+- Add continuous, full-page PDF viewing with an explicit download action.
+- Add an authenticated CLI command for appending PDFs to existing projects up
+  to the ten-file limit.
+- Add `paper-amigo update` for safely fast-forwarding a linked CLI checkout.
+
 ## 0.5.0 (2026-08-27)
 
 ### Features
@@ -68,7 +75,7 @@ This file records notable changes to Paper Amigo. Releases follow
   profile links, and multiple PDF files.
 - Add an owner-authenticated CLI for project creation and listing, recursive PDF
   discovery, duplicate detection, and direct uploads.
-- Add macOS Keychain-backed CLI login, update, and logout commands.
+- Add macOS Keychain-backed CLI login and logout commands.
 - Add an agent skill that uses the CLI for project ingestion.
 
 ### Changed

@@ -1,12 +1,23 @@
 ---
 name: paper-amigo
-description: Create, list, replace files in, and permanently delete Paper Amigo research projects using the installed owner-authenticated CLI.
+description: Update a linked Paper Amigo CLI installation; create, list, append and replace files in, and permanently delete research projects using the installed owner-authenticated CLI.
 ---
 
 # Paper Amigo
 
 Use the `paper-amigo` CLI for all Paper Amigo project operations. Do not call
 UploadThing directly or request, read, or print owner credentials.
+
+## Update the CLI
+
+When the user explicitly asks to update a checkout-linked installation, run:
+
+```bash
+paper-amigo update
+```
+
+The updater refuses to overwrite tracked local changes. Do not stash, discard,
+or commit those changes unless the user separately requests it.
 
 ## Before creating a project
 
@@ -54,6 +65,24 @@ paper-amigo project list --json
 ```
 
 Use the returned project IDs and metadata as the source of truth.
+
+## Append project files
+
+List projects first to confirm the target and its remaining capacity, then add
+one or more PDFs or directories:
+
+```bash
+paper-amigo project append <project-id> <path...> --json
+```
+
+Use `--recursive` for nested directories, `--dry-run` to validate before
+uploading, and `--concurrency <1-8>` to control parallel uploads. The default
+concurrency is three, but one append command may add enough files to bring the
+project to its ten-PDF maximum.
+
+Treat `append-status-unknown` specially: run `project list --json` and inspect
+the target project before retrying, because a timed-out request may already have
+committed all appended files.
 
 ## Replace a project file
 
