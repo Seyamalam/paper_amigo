@@ -2,10 +2,16 @@
 
 import { useState } from "react"
 import { Check, Copy, Link2, Plus } from "lucide-react"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { ShareLinkSummary } from "@/lib/sharing"
 
 const createLinkResponseSchema = z.object({
@@ -71,8 +77,12 @@ export function ShareLinkPanel({
         ...current,
       ])
       setLabel("")
+      toast.success("Share link created")
     } catch (caught) {
       setError(
+        caught instanceof Error ? caught.message : "Link creation failed"
+      )
+      toast.error(
         caught instanceof Error ? caught.message : "Link creation failed"
       )
     } finally {
@@ -88,8 +98,10 @@ export function ShareLinkPanel({
     try {
       await navigator.clipboard.writeText(createdUrl)
       setCopied(true)
+      toast.success("Link copied to clipboard")
     } catch {
       setError("Copy failed. Select the link manually")
+      toast.error("Copy failed. Select the link manually")
     }
   }
 
@@ -118,14 +130,19 @@ export function ShareLinkPanel({
             setLabel(event.currentTarget.value)
           }}
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={busy || label.trim() === ""}
-        >
-          <Plus aria-hidden="true" />
-          <span className="sr-only">Create share link</span>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="submit"
+              size="icon"
+              disabled={busy || label.trim() === ""}
+            >
+              <Plus aria-hidden="true" />
+              <span className="sr-only">Create share link</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Create share link</TooltipContent>
+        </Tooltip>
       </form>
 
       {createdUrl ? (

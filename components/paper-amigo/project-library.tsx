@@ -2,12 +2,17 @@
 
 import { useDeferredValue, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowDownUp, Plus, Search } from "lucide-react"
+import { ArrowDownUp, FilePlus2, Plus, Search } from "lucide-react"
 
 import { PageHeading } from "@/components/paper-amigo/page-heading"
 import { ProjectCard } from "@/components/paper-amigo/project-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { Project } from "@/lib/projects"
 
 export function ProjectLibrary({
@@ -60,7 +65,8 @@ export function ProjectLibrary({
             </p>
           </div>
           <div className="flex gap-2">
-            <search className="min-w-0 flex-1 sm:w-64">
+            {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- React does not recognize the <search> element yet */}
+            <div role="search" className="min-w-0 flex-1 sm:w-64">
               <form
                 className="relative"
                 onSubmit={(event) => {
@@ -83,27 +89,39 @@ export function ProjectLibrary({
                   }}
                 />
               </form>
-            </search>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-lg"
-              aria-label={
-                oldestFirst ? "Sort newest first" : "Sort oldest first"
-              }
-              onClick={() => {
-                setOldestFirst((current) => !current)
-              }}
-            >
-              <ArrowDownUp aria-hidden="true" />
-            </Button>
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-lg"
+                  aria-label={
+                    oldestFirst ? "Sort newest first" : "Sort oldest first"
+                  }
+                  onClick={() => {
+                    setOldestFirst((current) => !current)
+                  }}
+                >
+                  <ArrowDownUp aria-hidden="true" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {oldestFirst ? "Sort newest first" : "Sort oldest first"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
         {visibleProjects.length === 0 ? (
           <div className="grid min-h-48 place-items-center border border-dashed bg-muted/20 p-8 text-center">
             <div>
-              <p className="text-sm font-medium">
+              {projects.length === 0 ? (
+                <FilePlus2 aria-hidden="true" className="mx-auto size-5" />
+              ) : (
+                <Search aria-hidden="true" className="mx-auto size-5" />
+              )}
+              <p className="mt-3 text-sm font-medium">
                 {projects.length === 0 ? "No projects" : "No matches"}
               </p>
               {projects.length === 0 ? (
