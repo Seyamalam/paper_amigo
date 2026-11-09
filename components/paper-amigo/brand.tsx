@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { BookOpen } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -12,7 +11,19 @@ export function Brand({ className, linked = true }: BrandProps) {
   const content = (
     <>
       <span className="grid size-9 shrink-0 place-items-center bg-foreground text-background">
-        <BookOpen aria-hidden="true" className="size-4" />
+        <svg
+          aria-hidden="true"
+          className="size-5"
+          fill="none"
+          viewBox="0 0 32 32"
+        >
+          <path d="M4 20 L28 4 L13.5 15 Z" fill="currentColor" />
+          <path
+            d="M13.5 15 L28 4 L11.5 28 Z"
+            fill="currentColor"
+            opacity=".55"
+          />
+        </svg>
       </span>
       <span className="text-[15px] leading-none font-semibold tracking-[-0.02em]">
         Paper Amigo

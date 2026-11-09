@@ -66,6 +66,9 @@
   margin-left: 24px;
 }
 .lp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 20px;
   font-weight: 650;
   letter-spacing: -0.02em;

@@ -28,6 +28,21 @@ export default function LandingPage() {
       <header className="lp-nav" data-enter="">
         <div className="wrap">
           <Link href="/" className="lp-brand">
+            <svg
+              aria-hidden="true"
+              width="26"
+              height="26"
+              viewBox="0 0 32 32"
+              style={{ flex: "none" }}
+            >
+              <rect width="32" height="32" fill="#0b0b0b" />
+              <path d="M4 20 L28 4 L13.5 15 Z" fill="#f7f7f6" />
+              <path
+                d="M13.5 15 L28 4 L11.5 28 Z"
+                fill="#f7f7f6"
+                opacity=".55"
+              />
+            </svg>
             Paper Amigo
           </Link>
           <nav className="lp-nav__links" aria-label="Page">
