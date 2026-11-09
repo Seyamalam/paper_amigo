@@ -1,7 +1,25 @@
+<div align="center">
+
+<img src="public/logo.svg" width="72" alt="Paper Amigo logo">
+
 # Paper Amigo
 
+**A private research-paper library for authors who share drafts.**
+Group PDFs into projects, send each project a labeled link, and read the
+critiques beside the file they mean. Recipients need no account.
+
+[paper-amigo.vercel.app](https://paper-amigo.vercel.app)
+
+</div>
+
+| Landing                                            | Library                                               |
+| -------------------------------------------------- | ----------------------------------------------------- |
+| ![Landing page](docs/screenshots/landing-hero.png) | ![Library in dark mode](docs/screenshots/library.png) |
+| ![Sign in](docs/screenshots/sign-in.png)           | ![Share links](docs/screenshots/sharing.png)          |
+
 Paper Amigo is a Next.js 16 application built with React 19, TypeScript,
-Tailwind CSS, and shadcn/ui.
+Convex, UploadThing, Tailwind CSS, and shadcn/ui. The marketing site lives at
+`/`; the owner workspace at `/library`.
 
 ## Requirements
 

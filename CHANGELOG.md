@@ -8,10 +8,21 @@ This file records notable changes to Paper Amigo. Releases follow
 
 ### Features
 
+- Add a public landing page at `/`; the owner library moves to `/library`.
+- Redesign sign-in as a split brand panel and form.
+- Add dialogs, dropdown menus, toast notifications, and tooltips.
+- Add the paper-plane brand mark and SVG favicon.
 - Add continuous, full-page PDF viewing with an explicit download action.
 - Add an authenticated CLI command for appending PDFs to existing projects up
   to the ten-file limit.
 - Add `paper-amigo update` for safely fast-forwarding a linked CLI checkout.
+
+### Changed
+
+- Upgrade dependencies across the board: Next.js 16.4.5, React 19.3.1,
+  Convex 1.49, pdf.js 6, Zod 4.6.7, ESLint 10, Vitest 5, and more.
+- Clear all production audit findings; `bun audit` reports zero
+  vulnerabilities.
 
 ## 0.5.0 (2026-08-27)
 

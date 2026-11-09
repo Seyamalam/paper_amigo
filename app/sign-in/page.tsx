@@ -35,16 +35,16 @@ function authErrorMessage(error: string | undefined): string | undefined {
 function SignInShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <main className="grid min-h-svh bg-background md:grid-cols-2">
-      <section className="flex flex-col justify-between bg-foreground p-8 text-background sm:p-12 lg:p-16">
-        <Brand linked={false} className="text-background" />
+      <section className="flex flex-col justify-between bg-[#0b0b0b] p-8 text-[#f7f7f6] sm:p-12 lg:p-16">
+        <Brand linked={false} className="text-[#f7f7f6]" />
         <div className="mt-16 md:mt-0">
-          <p className="font-mono text-[10px] tracking-[0.18em] text-background/60 uppercase">
+          <p className="font-mono text-[10px] tracking-[0.18em] text-[#f7f7f6]/60 uppercase">
             1 owner · no recipient accounts
           </p>
           <h1 className="mt-6 max-w-md text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
             A research-paper library for careful readers.
           </h1>
-          <ul className="mt-10 space-y-3 border-t border-background/15 pt-8">
+          <ul className="mt-10 space-y-3 border-t border-[#f7f7f6]/15 pt-8">
             {[
               "Projects group PDFs behind one link",
               "Share links open files, nothing else",
@@ -52,9 +52,9 @@ function SignInShell({ children }: Readonly<{ children: React.ReactNode }>) {
             ].map((line) => (
               <li
                 key={line}
-                className="flex items-center gap-3 text-sm text-background/75"
+                className="flex items-center gap-3 text-sm text-[#f7f7f6]/75"
               >
-                <span className="size-1.5 bg-background" aria-hidden="true" />
+                <span className="size-1.5 bg-[#f7f7f6]" aria-hidden="true" />
                 {line}
               </li>
             ))}
