@@ -54,10 +54,11 @@ const fallbackPageSize: PdfPageSize = { height: 792, width: 612 }
 async function loadPdfDocument(url: string): Promise<PdfDocument> {
   const pdfjs = await import("pdfjs-dist")
   pdfjs.GlobalWorkerOptions.workerSrc = workerSource
-  const document = await pdfjs.getDocument({ url }).promise
+  const loadingTask = pdfjs.getDocument({ url })
+  const document = await loadingTask.promise
 
   return {
-    destroy: () => document.destroy(),
+    destroy: () => loadingTask.destroy(),
     getPage: async (pageNumber) => {
       const page = await document.getPage(pageNumber)
 
