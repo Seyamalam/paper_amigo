@@ -1,7 +1,7 @@
 {
-  "*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}": [
+  "{*,!(.agents|.claude|.taste-skill)/**/*}.{js,mjs,cjs,jsx,ts,mts,cts,tsx}": [
     "prettier --write",
     "oxlint --fix --deny-warnings"
   ],
-  "*.{css,json,jsonc,md,mdx,yaml,yml}": "prettier --write"
+  "{*,!(.agents|.claude|.taste-skill)/**/*}.{css,json,jsonc,md,mdx,yaml,yml}": "prettier --write"
 }
