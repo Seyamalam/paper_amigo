@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 import "./landing.css"
-import { MobileMenu, Triptych, WordHighlight } from "@/components/landing/bits"
+import { MobileMenu, WordHighlight } from "@/components/landing/bits"
 
 export const metadata: Metadata = {
   title: "Paper Amigo: a research-paper library for authors",
@@ -45,7 +45,7 @@ export default function LandingPage() {
       </header>
 
       <main id="top">
-        {/* hero: triptych — headline, cycling collage, one large action */}
+        {/* hero: statement left, product window right, enters on load */}
         <section
           className="lp-hero"
           style={{ paddingTop: 0, paddingBottom: 0 }}
@@ -60,17 +60,64 @@ export default function LandingPage() {
                 each project a labeled link, and read the critiques beside the
                 file they mean.
               </p>
+              <div className="lp-hero__cta">
+                <Link
+                  href="/sign-in"
+                  className="lp-btn lp-btn--primary lp-btn--xl"
+                >
+                  Sign in
+                </Link>
+                <a href="#product" className="lp-btn lp-btn--ghost lp-btn--xl">
+                  See the product
+                </a>
+              </div>
             </div>
-            <div className="lp-hero__collage" aria-hidden="true">
-              <Triptych />
-            </div>
-            <div className="lp-hero__act">
-              <Link
-                href="/sign-in"
-                className="lp-btn lp-btn--primary lp-btn--xl"
-              >
-                Sign in
-              </Link>
+            <div className="lp-hero__art" aria-hidden="true">
+              <div className="lp-window">
+                <div className="lp-window__bar">
+                  <i /> <i /> <i />
+                  <span>paper amigo · project</span>
+                </div>
+                <div className="lp-window__body lp-window__body--hero">
+                  <div className="lp-pane">
+                    <p className="lp-pane__h">Files</p>
+                    <div className="lp-row lp-row--on">paper-v3.pdf</div>
+                    <div className="lp-row">supplement.pdf</div>
+                    <div className="lp-row">figures.pdf</div>
+                  </div>
+                  <div className="lp-pane lp-pane--mid">
+                    <div className="lp-sheet">
+                      <div className="lp-lines">
+                        <i style={{ width: "60%" }} />
+                        <i />
+                        <i />
+                        <i />
+                        <i style={{ width: "45%" }} />
+                        <i />
+                        <i />
+                        <i style={{ width: "72%" }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lp-pane">
+                    <p className="lp-pane__h">Share links</p>
+                    <div className="lp-sharechip">paper-amigo.app/s/8xk2</div>
+                    <div className="lp-stat">
+                      <span>views</span>
+                      <span>7</span>
+                    </div>
+                    <div className="lp-stat">
+                      <span>unique</span>
+                      <span>2</span>
+                    </div>
+                    <p className="lp-pane__h" style={{ marginTop: 14 }}>
+                      Critiques
+                    </p>
+                    <div className="lp-row">p. 12 · restore ablation</div>
+                    <div className="lp-row">p. 4 · table 2 metric</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
