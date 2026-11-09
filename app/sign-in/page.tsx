@@ -34,10 +34,40 @@ function authErrorMessage(error: string | undefined): string | undefined {
 
 function SignInShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <main className="grid min-h-svh place-items-center bg-background px-4 py-10">
-      <section className="w-full max-w-sm border bg-card p-6 sm:p-8">
-        <Brand linked={false} />
-        <div className="mt-8">{children}</div>
+    <main className="grid min-h-svh bg-background md:grid-cols-2">
+      <section className="flex flex-col justify-between bg-foreground p-8 text-background sm:p-12 lg:p-16">
+        <Brand linked={false} className="text-background" />
+        <div className="mt-16 md:mt-0">
+          <p className="font-mono text-[10px] tracking-[0.18em] text-background/60 uppercase">
+            1 owner · no recipient accounts
+          </p>
+          <h1 className="mt-6 max-w-md text-[clamp(2rem,4vw,3.25rem)] leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
+            A research-paper library for careful readers.
+          </h1>
+          <ul className="mt-10 space-y-3 border-t border-background/15 pt-8">
+            {[
+              "Projects group PDFs behind one link",
+              "Share links open files, nothing else",
+              "Critiques land beside the file they mean",
+            ].map((line) => (
+              <li
+                key={line}
+                className="flex items-center gap-3 text-sm text-background/75"
+              >
+                <span className="size-1.5 bg-background" aria-hidden="true" />
+                {line}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+      <section className="grid place-items-center px-4 py-10 sm:px-10">
+        <div className="w-full max-w-sm">
+          <p className="font-mono text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
+            Paper Amigo
+          </p>
+          <div className="mt-8">{children}</div>
+        </div>
       </section>
     </main>
   )
@@ -63,7 +93,7 @@ async function SignInContent({
       <SignInShell>
         <h1 className="text-xl font-semibold tracking-tight">Demo mode</h1>
         <Button asChild className="mt-6 w-full">
-          <Link href="/">Open library</Link>
+          <Link href="/library">Open library</Link>
         </Button>
       </SignInShell>
     )

@@ -30,7 +30,7 @@ export function Brand({ className, linked = true }: BrandProps) {
 
   return (
     <Link
-      href="/"
+      href="/library"
       aria-label="Paper Amigo library"
       className={cn("group inline-flex items-center gap-3", className)}
     >

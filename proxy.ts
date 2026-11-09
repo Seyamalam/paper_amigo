@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    "/",
+    "/library",
     "/papers/:path*",
     "/sharing/:path*",
     "/critiques/:path*",

@@ -21,7 +21,7 @@ type NavItem = Readonly<{
 }>
 
 const primaryItems: readonly NavItem[] = [
-  { href: "/", label: "Library", icon: Archive },
+  { href: "/library", label: "Library", icon: Archive },
   { href: "/sharing", label: "Share links", icon: Share2 },
   { href: "/critiques", label: "Critiques", icon: MessageSquareText },
   { href: "/upload", label: "Create", icon: FilePlus2 },
@@ -36,7 +36,7 @@ const settingsItem: NavItem = {
 function isCurrentPath(pathname: string, href: Route): boolean {
   if (href === "/") {
     return (
-      pathname === "/" ||
+      pathname === "/library" ||
       pathname.startsWith("/projects/") ||
       pathname.startsWith("/papers/")
     )

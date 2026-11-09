@@ -46,7 +46,7 @@ export default async function ProjectPage({
   return (
     <div className="space-y-5">
       <Link
-        href="/"
+        href="/library"
         className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft aria-hidden="true" className="size-3.5" />

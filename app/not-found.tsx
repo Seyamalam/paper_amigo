@@ -18,7 +18,7 @@ export default function NotFound() {
           The paper or link is unavailable.
         </p>
         <Button asChild className="mt-6">
-          <Link href="/">Return to library</Link>
+          <Link href="/library">Return to library</Link>
         </Button>
       </div>
     </main>

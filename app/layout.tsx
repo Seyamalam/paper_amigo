@@ -13,6 +13,10 @@ export const metadata: Metadata = {
   },
   description:
     "A private research-paper library built for focused reading and useful critique.",
+  other: {
+    "page-type": "software",
+    "site-kind": "software",
+  },
 }
 
 export const viewport: Viewport = {
@@ -38,6 +42,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-type="software"
       suppressHydrationWarning
       className={cn(
         "antialiased",

@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
     state.configuration.ownerEmail,
     state.configuration.secret
   )
-  const response = NextResponse.redirect(new URL("/", request.url), 303)
+  const response = NextResponse.redirect(new URL("/library", request.url), 303)
   response.headers.set("cache-control", "no-store")
   response.cookies.set({
     name: ownerSessionCookieName,

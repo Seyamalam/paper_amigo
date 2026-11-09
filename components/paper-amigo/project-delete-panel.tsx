@@ -58,7 +58,7 @@ export function ProjectDeletePanel({
               onDeleted={() => {
                 setOpen(false)
                 toast.success("Project deleted")
-                router.replace("/")
+                router.replace("/library")
                 router.refresh()
               }}
             />
